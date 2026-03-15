@@ -44,6 +44,11 @@ jobs:
         # Thêm dòng trống vào cuối tất cả file cbl và cpy nếu chưa có
         find . -name "*.cbl" -exec sed -i -e '$a\' {} \;
         find . -name "*.cpy" -exec sed -i -e '$a\' {} \;
+    - name: Copy SQLCA
+      run: |
+        mkdir -p copy
+        cp /usr/local/share/ocesql/sqlca.cbl copy/ || true
+        cp /usr/local/share/ocesql/copy/sqlca.cbl copy/ || true
 
     - name: Build with Makefile
       run: |

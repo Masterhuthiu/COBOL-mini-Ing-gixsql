@@ -5,9 +5,11 @@
 
        WORKING-STORAGE SECTION.
 
-       COPY "policy.cpy".
+       01 CUSTOMER-NAME     PIC X(100).
+       01 PREMIUM           PIC 9(7)V99.
+       01 START-DATE        PIC X(10).
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
+       EXEC SQL INCLUDE sqlca END-EXEC.
 
        PROCEDURE DIVISION.
 
@@ -20,8 +22,12 @@
                (customer_name, premium, start_date)
                VALUES
                (:CUSTOMER-NAME, :PREMIUM, :START-DATE)
-           END-EXEC
+           END-EXEC.
 
-           DISPLAY "POLICY CREATED"
+           IF SQLCODE = 0
+               DISPLAY "POLICY CREATED"
+           ELSE
+               DISPLAY "ERROR INSERT POLICY: " SQLCODE
+           END-IF.
 
            GOBACK.

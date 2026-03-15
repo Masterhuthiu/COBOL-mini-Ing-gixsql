@@ -5,9 +5,11 @@
 
        WORKING-STORAGE SECTION.
 
-       COPY "rider.cpy".
+       01 POLICY-ID       PIC 9(9).
+       01 RIDER-TYPE      PIC X(50).
+       01 RIDER-PREMIUM   PIC 9(7)V99).
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
+       EXEC SQL INCLUDE sqlca END-EXEC.
 
        PROCEDURE DIVISION.
 
@@ -20,8 +22,12 @@
                (policy_id, rider_type, rider_premium)
                VALUES
                (:POLICY-ID, :RIDER-TYPE, :RIDER-PREMIUM)
-           END-EXEC
+           END-EXEC.
 
-           DISPLAY "RIDER ADDED"
+           IF SQLCODE = 0
+               DISPLAY "RIDER ADDED"
+           ELSE
+               DISPLAY "ERROR INSERT RIDER: " SQLCODE
+           END-IF.
 
            GOBACK.

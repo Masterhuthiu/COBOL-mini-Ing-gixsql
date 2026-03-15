@@ -4,17 +4,17 @@ OCESQL=ocesql
 SRC=src
 BIN=bin
 
-PROGRAMS=main policy rider db
-
 all: build
 
 build:
 	mkdir -p $(BIN)
 
 	for f in $(SRC)/*.cbl; do \
-	    $(OCESQL) $$f $$f.cob; \
+	    echo "Compiling $$f"; \
+	    $(OCESQL) $$f; \
 	    $(COBOL) -x $$f.cob -o $(BIN)/$$(basename $$f .cbl); \
 	done
 
 clean:
-	rm -rf $(BIN)/*.cob $(BIN)/*
+	rm -f $(SRC)/*.cob
+	rm -rf $(BIN)

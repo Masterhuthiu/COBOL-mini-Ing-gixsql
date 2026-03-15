@@ -29,28 +29,30 @@ jobs:
             bison \
             libpq-dev \
             libncurses5-dev \
-            libdb-dev
+            libdb-dev \
+            libspdlog-dev \
+            libfmt-dev
 
       - name: Install GixSQL from Source
         run: |
           git clone https://github.com/mridoni/gixsql.git
           cd gixsql
           
-          # Sửa lỗi thiếu <cstdint> bằng cách chèn vào file ESQLDefinitions.h
-          # Lệnh sed này chèn #include <cstdint> vào dòng đầu tiên của file
+          # 1. Sửa lỗi thiếu <cstdint> cho uint64_t
           sed -i '1i #include <cstdint>' libgixpp/ESQLDefinitions.h
           
-          # Tạo file trống để tránh lỗi automake
+          # 2. Tạo file trống để tránh lỗi automake
           touch extra_files.mk 
           
-          # Khởi tạo quy trình build
+          # 3. Khởi tạo quy trình build
           libtoolize --force
           aclocal
           autoheader
           automake --force-missing --add-missing
           autoconf
           
-          # Cấu hình và biên dịch
+          # 4. Cấu hình và biên dịch
+          # Thêm --with-spdlog nếu cần, nhưng thường pkg-config sẽ tự tìm thấy
           ./configure --disable-dependency-tracking
           make -j$(nproc)
           sudo make install
@@ -58,7 +60,7 @@ jobs:
 
       - name: Build COBOL Project
         run: |
-          # Chạy Makefile của dự án bạn
+          # Chạy Makefile của dự án COBOL của bạn
           make clean
           make prep || true
           make

@@ -8,18 +8,16 @@
 
        PROCEDURE DIVISION.
 
-           DISPLAY "CONNECTING DATABASE..."
+           DISPLAY "CONNECTING DB".
 
            EXEC SQL
                CONNECT TO "testdb"
-               USER "postgres"
-               USING "password"
            END-EXEC.
 
            IF SQLCODE NOT = 0
-               DISPLAY "DB CONNECT FAILED: " SQLCODE
+               DISPLAY "CONNECT FAILED " SQLCODE
            ELSE
-               DISPLAY "DB CONNECT OK"
+               DISPLAY "CONNECT OK"
            END-IF.
 
            GOBACK.

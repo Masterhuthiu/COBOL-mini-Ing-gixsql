@@ -3,12 +3,14 @@
 
        PROCEDURE DIVISION.
 
-           CALL "DB-CONNECT"
+           DISPLAY "START MINI INGENIUM".
 
-           CALL "CREATE-POLICY"
+           CALL "DB-CONNECT".
 
-           CALL "ADD-RIDER"
+           CALL "CREATE-POLICY".
 
-           DISPLAY "DONE"
+           CALL "ADD-RIDER".
+
+           DISPLAY "DONE".
 
            STOP RUN.

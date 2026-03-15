@@ -15,6 +15,7 @@ build:
 		base=$$(basename $$f .cbl); \
 		echo "Compiling $$base"; \
 		$(OCESQL) $$f; \
+		ls src; \
 		$(COBOL) -x $(SRC)/$$base.cob -o $(BIN)/$$base; \
 	done
 

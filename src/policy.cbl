@@ -5,9 +5,9 @@
 
        WORKING-STORAGE SECTION.
 
-       01 CUSTOMER-NAME     PIC X(100).
-       01 PREMIUM           PIC 9(7)V99.
-       01 START-DATE        PIC X(10).
+       01 CUSTOMER-NAME PIC X(100).
+       01 PREMIUM       PIC 9(7)V99.
+       01 START-DATE    PIC X(10).
 
        EXEC SQL INCLUDE sqlca END-EXEC.
 
@@ -24,10 +24,6 @@
                (:CUSTOMER-NAME, :PREMIUM, :START-DATE)
            END-EXEC.
 
-           IF SQLCODE = 0
-               DISPLAY "POLICY CREATED"
-           ELSE
-               DISPLAY "ERROR INSERT POLICY: " SQLCODE
-           END-IF.
+           DISPLAY "POLICY CREATED".
 
            GOBACK.

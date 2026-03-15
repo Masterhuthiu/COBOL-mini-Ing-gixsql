@@ -6,24 +6,21 @@ SRC_DIR = src
 DB_DIR  = db
 CPY_DIR = copy
 
-# Đường dẫn đúng sau khi install Open-COBOL-ESQL
 OCESQL_COPY  = /usr/local/share/open-cobol-esql/copy
 OCESQL_SHARE = /usr/local/share/open-cobol-esql
 
-# Tham số cho precompiler
 SQLPP_FLAGS = --inc=$(CPY_DIR) --inc=$(OCESQL_COPY)
 
-# Tham số compile cho GnuCOBOL
 COBFLAGS = -x \
-	-I$(CPY_DIR) \
-	-I$(OCESQL_COPY) \
-	-I$(OCESQL_SHARE) \
-	-locesql
+    -I$(CPY_DIR) \
+    -I$(OCESQL_COPY) \
+    -I$(OCESQL_SHARE) \
+    -locesql
 
 all: clean prep build
 
 prep:
-	@mkdir -p $(BIN_DIR)
+	mkdir -p $(BIN_DIR)
 
 build:
 	@echo "========================================"
@@ -31,7 +28,7 @@ build:
 	@echo "========================================"
 
 	@echo "Checking sqlca..."
-	@ls -l $(OCESQL_COPY) || true
+	@ls -l $(OCESQL_COPY)
 
 	@for f in $(SRC_DIR)/*.cbl $(DB_DIR)/*.cbl; do \
 		[ -e "$$f" ] || continue; \
@@ -42,12 +39,9 @@ build:
 		if grep -q "EXEC SQL" "$$f"; then \
 			echo "SQL detected → running ocesql"; \
 			$(SQLPP) $(SQLPP_FLAGS) "$$f"; \
-			\
-			# rename file do ocesql tạo
 			if [ -f "preeql$$base.cob" ]; then \
 				mv "preeql$$base.cob" "$${f%.cbl}.cob"; \
 			fi; \
-			\
 			if [ -f "$${f%.cbl}.cob" ]; then \
 				echo "Compiling generated COBOL"; \
 				$(COBOL) $(COBFLAGS) "$${f%.cbl}.cob" -o $(BIN_DIR)/$$base; \

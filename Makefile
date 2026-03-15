@@ -6,12 +6,14 @@ DB_DIR = db
 CPY_DIR = copy
 # Đường dẫn chuẩn của ocesql sau khi cài đặt trên Ubuntu
 OCESQL_SHARE = /usr/local/share/ocesql
+# nơi chứa sqlca
+OCESQL_COPY=/usr/local/share/ocesql/copy
 
 # Tham số ocesql: --inc cho copybook của bạn và sqlca của hệ thống
-SQLPP_FLAGS = --inc=./$(CPY_DIR) --inc=$(OCESQL_SHARE)
+SQLPP_FLAGS = --inc=./$(OCESQL_COPY) --inc=$(OCESQL_SHARE)
 
 # Tham số cobc: -I để nạp sqlca.cbl và các copybook vào quá trình biên dịch
-COBFLAGS = -x -I$(CPY_DIR) -I$(OCESQL_SHARE) -locesql
+COBFLAGS = -x -I$(OCESQL_COPY) -I$(OCESQL_SHARE) -locesql
 
 all: clean prep build
 

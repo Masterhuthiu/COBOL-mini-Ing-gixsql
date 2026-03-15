@@ -57,3 +57,4 @@ jobs:
     - name: Build project
       run: |
         make
+        bin/test_policy

@@ -16,8 +16,29 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y gnucobol
-        sudo apt install -y postgresql-client
+        sudo apt install -y \
+            gnucobol \
+            build-essential \
+            autoconf \
+            automake \
+            libtool \
+            libpq-dev \
+            git
+
+    - name: Install Open-COBOL-ESQL
+      run: |
+        git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git
+        cd Open-COBOL-ESQL
+        autoreconf -i
+        ./configure
+        make
+        sudo make install
+        sudo ldconfig
+
+    - name: Verify install
+      run: |
+        which ocesql
+        ocesql --version
 
     - name: Build project
       run: |

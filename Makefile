@@ -5,7 +5,8 @@ SRC=src
 BIN=bin
 
 all: build
-
+pwd
+ls
 build:
 	mkdir -p $(BIN)
 

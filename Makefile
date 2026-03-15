@@ -1,38 +1,35 @@
 COBOL = cobc
 SQLPP = gixsql
 
-# Thêm đường dẫn chứa các file COPY (.cpy)
+# Thư mục chứa các file COPY (.cpy)
 CPY_DIR = copy
-# Cờ bổ sung cho GixSQL để tìm file copy
-SQLPP_FLAGS = -I$(CPY_DIR)
+SQLPP_FLAGS = -I$(CPY_DIR) -I.
 
-# Các thư mục nguồn
-SRC_DIR = src
-DB_DIR = db
-BUILD_DIR = build
+# Tìm tất cả file .cbl có chứa EXEC SQL (thường nằm trong db/)
+# Dùng shell find để chắc chắn tìm thấy file trên Linux
+DB_SOURCES := $(shell find . -name "*.cbl" -path "*/db/*")
+DB_INTERMEDIATE := $(patsubst %.cbl, %.cob, $(notdir $(DB_SOURCES)))
 
-DB_SOURCES = $(wildcard $(DB_DIR)/*.cbl)
-DB_INTERMEDIATE = $(patsubst $(DB_DIR)/%.cbl, %.cob, $(DB_SOURCES))
-SRC_SOURCES = $(wildcard $(SRC_DIR)/*.cbl)
+# Các file COBOL thuần trong src
+SRC_SOURCES := $(shell find . -name "*.cbl" -path "*/src/*")
 
-COBFLAGS = -x -free -I$(CPY_DIR)
+COBFLAGS = -x -free -I$(CPY_DIR) -lpq
 
-all: prep app
+all: prep $(DB_INTERMEDIATE) app
 
 prep:
-	@mkdir -p $(BUILD_DIR)
+	@mkdir -p build
 
-# Cập nhật quy tắc này để thêm $(SQLPP_FLAGS)
-%.cob: $(DB_DIR)/%.cbl
-	$(SQLPP) $(SQLPP_FLAGS) $< -o $@
+# Quy tắc biên dịch linh hoạt cho file SQL
+%.cob: 
+	@echo "Processing SQL for $<..."
+	$(SQLPP) $(SQLPP_FLAGS) $(shell find . -name "$*.cbl") -o $@
 
-app: $(DB_INTERMEDIATE)
-	$(COBOL) $(COBFLAGS) -o app \
-	$(SRC_SOURCES) \
-	$(DB_INTERMEDIATE)
+app:
+	$(COBOL) $(COBFLAGS) -o app $(SRC_SOURCES) $(DB_INTERMEDIATE)
 
 clean:
 	rm -f app *.cob
-	rm -rf $(BUILD_DIR)
+	rm -rf build
 
 .PHONY: all clean prep

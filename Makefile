@@ -1,38 +1,39 @@
-name: COBOL Build
+COBOL = cobc
+SQLPP = gixsql
 
-on:
-  push:
-    branches: [ main ]
+# Các thư mục nguồn
+SRC_DIR = src
+DB_DIR = db
+BUILD_DIR = build
 
-jobs:
-  build:
+# Tìm tất cả file .cbl trong thư mục db và chuyển tên thành .cob (sau khi qua gixsql)
+DB_SOURCES = $(wildcard $(DB_DIR)/*.cbl)
+DB_INTERMEDIATE = $(patsubst $(DB_DIR)/%.cbl, %.cob, $(DB_SOURCES))
 
-    runs-on: ubuntu-latest
+# Tìm tất cả file .cbl trong thư mục src
+SRC_SOURCES = $(wildcard $(SRC_DIR)/*.cbl)
 
-    steps:
+# Cờ biên dịch (Thêm thư viện SQL nếu cần, ví dụ -lpq cho PostgreSQL)
+COBFLAGS = -x -free
 
-    - name: Checkout
-      uses: actions/checkout@v3
+all: prep app
 
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y \
-          gnucobol \
-          gcc \
-          make \
-          git \
-          libpq-dev \
-          wget
+# Tạo thư mục build nếu chưa có (để giữ môi trường sạch sẽ)
+prep:
+	@mkdir -p $(BUILD_DIR)
 
-    - name: Install OpenCOBOL-ESQL
-      run: |
-        git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git
-        cd Open-COBOL-ESQL
-        ./configure
-        make
-        sudo make install
+# Quy tắc tiền xử lý SQL: .cbl trong db/ -> .cob ở thư mục hiện tại
+%.cob: $(DB_DIR)/%.cbl
+	$(SQLPP) $< -o $@
 
-    - name: Build project
-      run: |
-        make
+# Biên dịch ứng dụng chính
+app: $(DB_INTERMEDIATE)
+	$(COBOL) $(COBFLAGS) -o app \
+	$(SRC_SOURCES) \
+	$(DB_INTERMEDIATE)
+
+clean:
+	rm -f app *.cob
+	rm -rf $(BUILD_DIR)
+
+.PHONY: all clean prep

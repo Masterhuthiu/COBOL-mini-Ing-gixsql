@@ -1,21 +1,14 @@
-       identification division.
-       class-id. HealthPolicy inherits StandardPolicy.
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. HEALTHPOLICY.
 
-       data division.
-       working-storage section.
-       01 health-factor pic 9v99 value 1.10.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       COPY "../copy/policy.cpy".
 
-       method-id. calcPremium.
-       linkage section.
-       01 result pic 9(9)v99.
+       PROCEDURE DIVISION.
 
-       procedure division returning result.
+           IF POLICY-TYPE = "HEALTH"
+               COMPUTE PREMIUM = 2000
+           END-IF.
 
-           invoke self "getPremium" returning result
-           compute result = result * health-factor
-
-           goback.
-
-       end method.
-
-       end class HealthPolicy.
+           GOBACK.

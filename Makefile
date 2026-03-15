@@ -1,26 +1,41 @@
-COBOL = cobc
-SQLPP = gixsql
+name: COBOL Build System
 
-SRC = src
-DB = db
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-all: app
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    # Sử dụng Docker Image có sẵn GixSQL để tránh lỗi biên dịch GixSQL thủ công
+    container:
+      image: mridoni/gixsql:latest
 
-policy_insert.cob:
-	$(SQLPP) $(DB)/policy_insert.cbl
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
 
-policy_select.cob:
-	$(SQLPP) $(DB)/policy_select.cbl
+      - name: Update System Libraries
+        run: |
+          # Cài đặt thêm thư viện để kết nối Database (ví dụ PostgreSQL)
+          # Nếu dùng DB khác, bạn có thể thay đổi libpq-dev
+          apt-get update
+          apt-get install -y libpq-dev
 
-app: policy_insert.cob policy_select.cob
-	$(COBOL) -x -o app \
-	$(SRC)/main.cbl \
-	$(SRC)/policy_service.cbl \
-	$(SRC)/standard_policy.cbl \
-	$(SRC)/health_policy.cbl \
-	$(SRC)/rider_service.cbl \
-	policy_insert.cob \
-	policy_select.cob
+      - name: Build Application
+        run: |
+          # Sử dụng Makefile để tự động tìm file .cbl trong /src và /db
+          # Lệnh 'make prep' tạo thư mục build (nếu Makefile của bạn có dùng)
+          make clean
+          make prep || true 
+          make
 
-clean:
-	rm -f app *.cob
+      - name: Archive Binary Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobol-executable
+          path: app
+          retention-days: 5

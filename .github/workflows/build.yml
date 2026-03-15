@@ -20,6 +20,7 @@ jobs:
           sudo apt-get install -y \
             gnucobol \
             gcc \
+            g++ \
             make \
             autoconf \
             automake \
@@ -34,24 +35,30 @@ jobs:
         run: |
           git clone https://github.com/mridoni/gixsql.git
           cd gixsql
-          # Fix lỗi thiếu file bằng cách tạo file trống
+          
+          # Sửa lỗi thiếu <cstdint> bằng cách chèn vào file ESQLDefinitions.h
+          # Lệnh sed này chèn #include <cstdint> vào dòng đầu tiên của file
+          sed -i '1i #include <cstdint>' libgixpp/ESQLDefinitions.h
+          
+          # Tạo file trống để tránh lỗi automake
           touch extra_files.mk 
-          # Chạy quy trình autoreconf thủ công để đảm bảo tính tương thích
+          
+          # Khởi tạo quy trình build
           libtoolize --force
           aclocal
           autoheader
           automake --force-missing --add-missing
           autoconf
+          
           # Cấu hình và biên dịch
           ./configure --disable-dependency-tracking
           make -j$(nproc)
           sudo make install
-          # Cập nhật link thư viện hệ thống
           sudo ldconfig
 
       - name: Build COBOL Project
         run: |
-          # Đảm bảo Makefile của bạn đã sẵn sàng ở thư mục gốc
+          # Chạy Makefile của dự án bạn
           make clean
           make prep || true
           make

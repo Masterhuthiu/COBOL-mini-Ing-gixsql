@@ -4,11 +4,13 @@ BIN_DIR = bin
 SRC_DIR = src
 DB_DIR = db
 CPY_DIR = copy
+# Thư mục chứa sqlca.cbl của ocesql (mặc định trên Ubuntu thường là /usr/local/share/ocesql)
+OCESQL_SHARE = /usr/local/share/ocesql
 
-# Tham số include đúng cho ocesql v1.4.0
-SQLPP_FLAGS = --inc=./$(CPY_DIR)
-# Liên kết thư viện runtime của Open-COBOL-ESQL
-COBFLAGS = -x -I$(CPY_DIR) -locesql
+# Tham số ocesql: --inc cho copybook của bạn, --inc cho sqlca của hệ thống
+SQLPP_FLAGS = --inc=./$(CPY_DIR) --inc=$(OCESQL_SHARE)
+# Tham số cobc: -I cho copybook, -I cho sqlca
+COBFLAGS = -x -I$(CPY_DIR) -I$(OCESQL_SHARE) -locesql
 
 all: clean prep build
 
@@ -23,18 +25,17 @@ build:
 		if grep -q "EXEC SQL" "$$f"; then \
 			echo "  --> Running ocesql..."; \
 			$(SQLPP) $(SQLPP_FLAGS) "$$f"; \
-			# XỬ LÝ LỖI TÊN FILE: ocesql v1.4.0 tạo ra 'preeql' + tên file \
+			# Xử lý file đầu ra có tiền tố preeql \
 			if [ -f "preeql$$base.cob" ]; then \
 				mv "preeql$$base.cob" "$${f%.cbl}.cob"; \
 			elif [ -f "$$base.cob" ]; then \
 				mv "$$base.cob" "$${f%.cbl}.cob"; \
 			fi; \
-			# Kiểm tra lại và biên dịch \
+			# Biên dịch file .cob đã tạo \
 			if [ -f "$${f%.cbl}.cob" ]; then \
 				$(COBOL) $(COBFLAGS) "$${f%.cbl}.cob" -o $(BIN_DIR)/$$base; \
 			else \
-				echo "  ERROR: Cannot find generated file for $$base"; \
-				ls -F; exit 1; \
+				echo "  ERROR: Failed to generate $$base.cob"; exit 1; \
 			fi; \
 		else \
 			echo "  --> Compiling directly..."; \

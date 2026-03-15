@@ -1,38 +1,42 @@
-name: COBOL Build System
+name: COBOL Build
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
-    
-    # SỬ DỤNG CONTAINER: Đây là chìa khóa để bỏ qua bước build GixSQL bị lỗi
-    container:
-      image: mridoni/gixsql:latest
 
     steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
 
-      - name: Install Database Headers
-        run: |
-          # Cài đặt thư viện để kết nối PostgreSQL (libpq)
-          apt-get update
-          apt-get install -y libpq-dev
+    - name: Checkout
+      uses: actions/checkout@v3
 
-      - name: Build Application
-        run: |
-          # Lệnh make sẽ tự động sử dụng gixsql và cobc có sẵn trong container
-          make clean
-          make prep || true
-          make
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          gnucobol \
+          gcc \
+          make \
+          autoconf \
+          automake \
+          libtool \
+          flex \
+          bison \
+          libpq-dev
 
-      - name: Upload Binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: cobol-app
-          path: app
+    - name: Install GixSQL
+      run: |
+        git clone https://github.com/mridoni/gixsql.git
+        cd gixsql
+        autoreconf -i
+        ./configure
+        make
+        sudo make install
+
+    - name: Build COBOL project
+      run: |
+        make

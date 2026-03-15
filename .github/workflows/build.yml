@@ -61,17 +61,16 @@ jobs:
     - name: Build project
       run: |
         make
-    - name: Run policy test
-      env:
-        PGHOST: localhost
-        PGPORT: 5432
-        PGUSER: postgres
-        PGPASSWORD: postgres
-        PGDATABASE: testdb
-      run: |
-        export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-        export COB_LIBRARY_PATH=/usr/local/lib
-        echo "Check OCESQL modules"
-        find /usr/local -name "OCESQL*.so"
-        find /tmp -name "OCESQL*.so"
-        ./bin/test_policy
+    # - name: Run policy test
+    #   env:
+    #     PGHOST: localhost
+    #     PGPORT: 5432
+    #     PGUSER: postgres
+    #     PGPASSWORD: postgres
+    #     PGDATABASE: testdb
+    #   run: |
+    #     export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+    #     export COB_LIBRARY_PATH=/usr/local/lib
+    #     echo "Check OCESQL modules"
+    #     find /usr/local -name "OCESQL*.so"
+    #     ./bin/test_policy

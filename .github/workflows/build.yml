@@ -71,4 +71,7 @@ jobs:
       run: |
         export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
         export COB_LIBRARY_PATH=/usr/local/lib
+        echo "========== CHECK OCESQL MODULES =========="
+        find /usr/local -name "OCESQL*.so" || true
+        ls -la /usr/local/lib/ocesql || true
         ./bin/test_policy

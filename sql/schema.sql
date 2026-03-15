@@ -11,3 +11,10 @@ CREATE TABLE riders (
     rider_type VARCHAR(50),
     rider_premium NUMERIC
 );
+
+CREATE TABLE policy (
+    policy_id INT PRIMARY KEY,
+    customer_name VARCHAR(50),
+    policy_type VARCHAR(20),
+    premium NUMERIC
+);

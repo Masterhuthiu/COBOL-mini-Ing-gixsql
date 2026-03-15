@@ -7,35 +7,33 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     
-    # Sử dụng Docker Image có sẵn GixSQL để tránh lỗi biên dịch GixSQL thủ công
+    # Sử dụng container có sẵn GixSQL để không phải tự build GixSQL nữa
     container:
       image: mridoni/gixsql:latest
 
     steps:
       - name: Checkout Source Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Update System Libraries
+      - name: Install Database Headers
         run: |
-          # Cài đặt thêm thư viện để kết nối Database (ví dụ PostgreSQL)
-          # Nếu dùng DB khác, bạn có thể thay đổi libpq-dev
+          # Cài đặt thư viện để kết nối PostgreSQL (nếu bạn dùng DB khác hãy đổi tên lib)
           apt-get update
           apt-get install -y libpq-dev
 
       - name: Build Application
         run: |
-          # Sử dụng Makefile để tự động tìm file .cbl trong /src và /db
-          # Lệnh 'make prep' tạo thư mục build (nếu Makefile của bạn có dùng)
+          # Xóa các file cũ và tạo thư mục build nếu cần
+          # Lệnh 'make' sẽ tự động chạy theo file Makefile của bạn
           make clean
-          make prep || true 
+          mkdir -p build
           make
 
-      - name: Archive Binary Artifacts
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cobol-executable
+          name: cobol-app
           path: app
-          retention-days: 5

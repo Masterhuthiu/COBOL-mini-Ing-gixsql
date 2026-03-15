@@ -10,12 +10,12 @@ build:
 	pwd
 	ls -l
 	mkdir -p $(BIN)
+
 	for f in $(SRC)/*.cbl; do \
-		echo "Current dir:"; \
-		pwd; \
-		echo "Compiling $$f"; \
+		base=$$(basename $$f .cbl); \
+		echo "Compiling $$base"; \
 		$(OCESQL) $$f; \
-		$(COBOL) -x $$f.cob -o $(BIN)/$$(basename $$f .cbl); \
+		$(COBOL) -x $(SRC)/$$base.cob -o $(BIN)/$$base; \
 	done
 
 clean:

@@ -5,15 +5,17 @@ SRC=src
 BIN=bin
 
 all: build
-pwd
-ls
-build:
-	mkdir -p $(BIN)
 
+build:
+	pwd
+	ls -l
+	mkdir -p $(BIN)
 	for f in $(SRC)/*.cbl; do \
-	    echo "Compiling $$f"; \
-	    $(OCESQL) $$f; \
-	    $(COBOL) -x $$f.cob -o $(BIN)/$$(basename $$f .cbl); \
+		echo "Current dir:"; \
+		pwd; \
+		echo "Compiling $$f"; \
+		$(OCESQL) $$f; \
+		$(COBOL) -x $$f.cob -o $(BIN)/$$(basename $$f .cbl); \
 	done
 
 clean:

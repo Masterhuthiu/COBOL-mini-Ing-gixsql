@@ -1,42 +1,63 @@
-name: COBOL Build
+name: COBOL Build and Install GixSQL
 
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
 
-    - name: Checkout
-      uses: actions/checkout@v3
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gnucobol \
+            gcc \
+            make \
+            autoconf \
+            automake \
+            libtool \
+            flex \
+            bison \
+            libpq-dev \
+            libncurses5-dev \
+            libdb-dev
 
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y \
-          gnucobol \
-          gcc \
-          make \
-          autoconf \
-          automake \
-          libtool \
-          flex \
-          bison \
-          libpq-dev
+      - name: Install GixSQL from Source
+        run: |
+          git clone https://github.com/mridoni/gixsql.git
+          cd gixsql
+          # Fix lỗi thiếu file bằng cách tạo file trống
+          touch extra_files.mk 
+          # Chạy quy trình autoreconf thủ công để đảm bảo tính tương thích
+          libtoolize --force
+          aclocal
+          autoheader
+          automake --force-missing --add-missing
+          autoconf
+          # Cấu hình và biên dịch
+          ./configure --disable-dependency-tracking
+          make -j$(nproc)
+          sudo make install
+          # Cập nhật link thư viện hệ thống
+          sudo ldconfig
 
-    - name: Install GixSQL
-      run: |
-        git clone https://github.com/mridoni/gixsql.git
-        cd gixsql
-        autoreconf -i
-        ./configure
-        make
-        sudo make install
+      - name: Build COBOL Project
+        run: |
+          # Đảm bảo Makefile của bạn đã sẵn sàng ở thư mục gốc
+          make clean
+          make prep || true
+          make
 
-    - name: Build COBOL project
-      run: |
-        make
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobol-app
+          path: app

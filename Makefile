@@ -21,22 +21,18 @@ jobs:
           gnucobol \
           gcc \
           make \
-          autoconf \
-          automake \
-          libtool \
-          flex \
-          bison \
-          libpq-dev
+          git \
+          libpq-dev \
+          wget
 
-    - name: Install GixSQL
+    - name: Install OpenCOBOL-ESQL
       run: |
-        git clone https://github.com/mridoni/gixsql.git
-        cd gixsql
-        autoreconf -i
+        git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git
+        cd Open-COBOL-ESQL
         ./configure
         make
         sudo make install
 
-    - name: Build COBOL project
+    - name: Build project
       run: |
         make

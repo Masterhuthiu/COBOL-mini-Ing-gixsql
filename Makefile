@@ -1,32 +1,31 @@
 COBOL = cobc
 SQLPP = gixsql
 
+# Thêm đường dẫn chứa các file COPY (.cpy)
+CPY_DIR = copy
+# Cờ bổ sung cho GixSQL để tìm file copy
+SQLPP_FLAGS = -I$(CPY_DIR)
+
 # Các thư mục nguồn
 SRC_DIR = src
 DB_DIR = db
 BUILD_DIR = build
 
-# Tìm tất cả file .cbl trong thư mục db và chuyển tên thành .cob (sau khi qua gixsql)
 DB_SOURCES = $(wildcard $(DB_DIR)/*.cbl)
 DB_INTERMEDIATE = $(patsubst $(DB_DIR)/%.cbl, %.cob, $(DB_SOURCES))
-
-# Tìm tất cả file .cbl trong thư mục src
 SRC_SOURCES = $(wildcard $(SRC_DIR)/*.cbl)
 
-# Cờ biên dịch (Thêm thư viện SQL nếu cần, ví dụ -lpq cho PostgreSQL)
-COBFLAGS = -x -free
+COBFLAGS = -x -free -I$(CPY_DIR)
 
 all: prep app
 
-# Tạo thư mục build nếu chưa có (để giữ môi trường sạch sẽ)
 prep:
 	@mkdir -p $(BUILD_DIR)
 
-# Quy tắc tiền xử lý SQL: .cbl trong db/ -> .cob ở thư mục hiện tại
+# Cập nhật quy tắc này để thêm $(SQLPP_FLAGS)
 %.cob: $(DB_DIR)/%.cbl
-	$(SQLPP) $< -o $@
+	$(SQLPP) $(SQLPP_FLAGS) $< -o $@
 
-# Biên dịch ứng dụng chính
 app: $(DB_INTERMEDIATE)
 	$(COBOL) $(COBFLAGS) -o app \
 	$(SRC_SOURCES) \

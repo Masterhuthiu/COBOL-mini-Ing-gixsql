@@ -1,29 +1,42 @@
-COBOL=cobc
-OCESQL=ocesql
+COBOL = cobc
+SQLPP = ocesql
+BIN_DIR = bin
+SRC_DIR = src
+DB_DIR = db
+CPY_DIR = copy
 
-SRC=src
-BIN=bin
+# Cờ biên dịch: -x (thực thi), -I (thư mục copybook)
+# Lưu ý: ocesql cần liên kết với thư viện ocesql (thường là -locesql)
+COBFLAGS = -x -I$(CPY_DIR) -locesql
 
-all: build
+all: clean prep build
+
+prep:
+	@mkdir -p $(BIN_DIR)
 
 build:
-	pwd
-	ls -l
-	mkdir -p $(BIN)
-
-	for f in $(SRC)/*.cbl; do \
+	@# Duyệt qua cả src và db để tìm file .cbl
+	@for f in $(SRC_DIR)/*.cbl $(DB_DIR)/*.cbl; do \
+		[ -e "$$f" ] || continue; \
 		base=$$(basename $$f .cbl); \
-		echo "Compiling $$base"; \
-		if grep -q "EXEC SQL" $$f; then \
-			echo "Running ocesql for $$f"; \
-			$(OCESQL) $$f; \
-			$(COBOL) -x $(SRC)/$$base.cob -o $(BIN)/$$base; \
+		dir=$$(dirname $$f); \
+		echo "Checking $$f..."; \
+		if grep -q "EXEC SQL" "$$f"; then \
+			echo "  --> Running ocesql for $$f"; \
+			$(SQLPP) "$$f"; \
+			if [ -f "$${f%.cbl}.cob" ]; then \
+				$(COBOL) $(COBFLAGS) "$${f%.cbl}.cob" -o $(BIN_DIR)/$$base; \
+			else \
+				echo "  ERROR: $${f%.cbl}.cob not generated!"; exit 1; \
+			fi; \
 		else \
-			echo "No SQL, compiling directly"; \
-			$(COBOL) -x $$f -o $(BIN)/$$base; \
+			echo "  --> Compiling directly: $$f"; \
+			$(COBOL) $(COBFLAGS) "$$f" -o $(BIN_DIR)/$$base; \
 		fi; \
 	done
 
 clean:
-	rm -f $(SRC)/*.cob
-	rm -rf $(BIN)
+	rm -rf $(BIN_DIR)
+	find . -name "*.cob" -delete
+
+.PHONY: all clean prep build

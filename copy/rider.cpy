@@ -1,5 +1,5 @@
        01 RIDER-REC.
-           05 RIDER-ID        PIC X(20).
-           05 POLICY-ID       PIC X(20).
-           05 RIDER-TYPE      PIC X(20).
-           05 RIDER-PREMIUM   PIC 9(7)V99.
+           05 RIDER-ID        PIC 9(9).
+           05 POLICY-ID       PIC 9(9).
+           05 RIDER-TYPE      PIC X(50).
+           05 RIDER-PREMIUM   PIC 9(9)V99.

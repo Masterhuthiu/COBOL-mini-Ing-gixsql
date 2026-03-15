@@ -1,35 +1,20 @@
-COBOL = cobc
-SQLPP = gixsql
+COBOL=cobc
+OCESQL=ocesql
 
-# Thư mục chứa các file COPY (.cpy)
-CPY_DIR = copy
-SQLPP_FLAGS = -I$(CPY_DIR) -I.
+SRC=src
+BIN=bin
 
-# Tìm tất cả file .cbl có chứa EXEC SQL (thường nằm trong db/)
-# Dùng shell find để chắc chắn tìm thấy file trên Linux
-DB_SOURCES := $(shell find . -name "*.cbl" -path "*/db/*")
-DB_INTERMEDIATE := $(patsubst %.cbl, %.cob, $(notdir $(DB_SOURCES)))
+PROGRAMS=main policy rider db
 
-# Các file COBOL thuần trong src
-SRC_SOURCES := $(shell find . -name "*.cbl" -path "*/src/*")
+all: build
 
-COBFLAGS = -x -free -I$(CPY_DIR) -lpq
+build:
+	mkdir -p $(BIN)
 
-all: prep $(DB_INTERMEDIATE) app
-
-prep:
-	@mkdir -p build
-
-# Quy tắc biên dịch linh hoạt cho file SQL
-%.cob: 
-	@echo "Processing SQL for $<..."
-	$(SQLPP) $(SQLPP_FLAGS) $(shell find . -name "$*.cbl") -o $@
-
-app:
-	$(COBOL) $(COBFLAGS) -o app $(SRC_SOURCES) $(DB_INTERMEDIATE)
+	for f in $(SRC)/*.cbl; do \
+	    $(OCESQL) $$f $$f.cob; \
+	    $(COBOL) -x $$f.cob -o $(BIN)/$$(basename $$f .cbl); \
+	done
 
 clean:
-	rm -f app *.cob
-	rm -rf build
-
-.PHONY: all clean prep
+	rm -rf $(BIN)/*.cob $(BIN)/*

@@ -1,137 +1,24 @@
-# name: COBOL Build and Install GixSQL
-
-# on:
-#   push:
-#     branches: [ main ]
-#   pull_request:
-#     branches: [ main ]
-
-# jobs:
-#   build:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - name: Checkout Source Code
-#         uses: actions/checkout@v4
-
-#       - name: Install Dependencies
-#         run: |
-#           sudo apt-get update
-#           sudo apt-get install -y \
-#             gnucobol \
-#             gcc \
-#             g++ \
-#             make \
-#             autoconf \
-#             automake \
-#             libtool \
-#             flex \
-#             bison \
-#             libpq-dev \
-#             libncurses5-dev \
-#             libdb-dev \
-#             libspdlog-dev \
-#             libfmt-dev
-
-#       - name: Install GixSQL from Source
-#         run: |
-#           git clone https://github.com/mridoni/gixsql.git
-#           cd gixsql
-          
-#           # 1. Sửa lỗi thiếu <cstdint> cho uint64_t
-#           sed -i '1i #include <cstdint>' libgixpp/ESQLDefinitions.h
-          
-#           # 2. Tạo file trống để tránh lỗi automake
-#           touch extra_files.mk 
-          
-#           # 3. Khởi tạo quy trình build
-#           libtoolize --force
-#           aclocal
-#           autoheader
-#           automake --force-missing --add-missing
-#           autoconf
-          
-#           # 4. Cấu hình và biên dịch
-#           # Thêm --with-spdlog nếu cần, nhưng thường pkg-config sẽ tự tìm thấy
-#           ./configure --disable-dependency-tracking
-#           make -j$(nproc)
-#           sudo make install
-#           sudo ldconfig
-
-#       - name: Build COBOL Project
-#         run: |
-#           # Chạy Makefile của dự án COBOL của bạn
-#           make clean
-#           make prep || true
-#           make
-
-#       - name: Upload Artifact
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: cobol-app
-#           path: app
-
-name: COBOL Build with GixSQL Cache
+name: Build COBOL
 
 on:
   push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
 
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            gnucobol gcc g++ make autoconf automake libtool \
-            flex bison libpq-dev libspdlog-dev libfmt-dev \
-            libncurses5-dev libdb-dev
+    - name: Checkout
+      uses: actions/checkout@v3
 
-      - name: Cache GixSQL Binary
-        id: cache-gixsql
-        uses: actions/cache@v3
-        with:
-          path: /usr/local
-          key: ${{ runner.os }}-gixsql-v1
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y gnucobol
+        sudo apt install -y postgresql-client
 
-      - name: Install GixSQL (Only if not cached)
-        if: steps.cache-gixsql.outputs.cache-hit != 'true'
-        run: |
-          git clone https://github.com/mridoni/gixsql.git
-          cd gixsql
-          # Sửa lỗi mã nguồn trực tiếp
-          sed -i '1i #include <cstdint>' libgixpp/ESQLDefinitions.h
-          touch extra_files.mk
-          # Quy trình build chuẩn
-          libtoolize --force
-          aclocal
-          autoheader
-          automake --force-missing --add-missing
-          autoconf
-          ./configure --disable-dependency-tracking
-          make -j$(nproc)
-          sudo make install
-          sudo ldconfig
-
-      - name: Build COBOL Project
-        run: |
-          # Cập nhật link thư viện nếu lấy từ cache
-          sudo ldconfig
-          # Thực hiện build project của bạn
-          make clean
-          make prep || true
-          make
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: cobol-app
-          path: app
+    - name: Build project
+      run: |
+        make

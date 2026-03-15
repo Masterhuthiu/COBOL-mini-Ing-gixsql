@@ -1,13 +1,13 @@
 CREATE TABLE policies (
-    id SERIAL PRIMARY KEY,
-    policy_number VARCHAR(50),
-    policy_type VARCHAR(20),
-    premium NUMERIC
+    policy_id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(100),
+    premium NUMERIC,
+    start_date DATE
 );
 
 CREATE TABLE riders (
-    id SERIAL PRIMARY KEY,
-    policy_id INTEGER,
-    rider_name VARCHAR(50),
+    rider_id SERIAL PRIMARY KEY,
+    policy_id INT REFERENCES policies(policy_id),
+    rider_type VARCHAR(50),
     rider_premium NUMERIC
 );

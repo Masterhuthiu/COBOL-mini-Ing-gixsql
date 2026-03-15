@@ -1,16 +1,14 @@
        IDENTIFICATION DIVISION.
        PROGRAM-ID. MAIN.
 
-       DATA DIVISION.
-       WORKING-STORAGE SECTION.
-       COPY "../copy/policy.cpy".
-
        PROCEDURE DIVISION.
 
-           MOVE "P001" TO POLICY-ID
-           MOVE "JOHN DOE" TO CUSTOMER-NAME
-           MOVE "HEALTH" TO POLICY-TYPE
+           CALL "DB-CONNECT"
 
-           CALL "POLICYSERVICE"
+           CALL "CREATE-POLICY"
+
+           CALL "ADD-RIDER"
+
+           DISPLAY "DONE"
 
            STOP RUN.

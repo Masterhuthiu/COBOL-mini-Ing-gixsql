@@ -1,0 +1,26 @@
+name: COBOL Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - uses: actions/checkout@v4
+
+    - name: Install GnuCOBOL
+      run: |
+        sudo apt update
+        sudo apt install -y gnucobol
+
+    - name: Install PostgreSQL client
+      run: |
+        sudo apt install -y libpq-dev
+
+    - name: Build project
+      run: |
+        make compile

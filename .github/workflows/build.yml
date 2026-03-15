@@ -29,11 +29,15 @@ jobs:
       run: |
         git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git
         cd Open-COBOL-ESQL
-        autoreconf -i
+        chmod +x autogen.sh && ./autogen.sh
+        export YACC="bison -y"
+        export CPPFLAGS="-I/usr/include/postgresql"
         ./configure
         make
         sudo make install
+        echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/ocesql.conf
         sudo ldconfig
+        ldconfig -p | grep ocesql
 
     - name: Verify install
       run: |

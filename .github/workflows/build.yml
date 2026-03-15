@@ -57,5 +57,14 @@ jobs:
     - name: Build project
       run: |
         make
+    - name: Run policy test
+      env:
+        PGHOST: localhost
+        PGPORT: 5432
+        PGUSER: postgres
+        PGPASSWORD: postgres
+        PGDATABASE: testdb
+      run: |
         export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-        bin/test_policy
+        export COB_LIBRARY_PATH=/usr/local/lib
+        ./bin/test_policy

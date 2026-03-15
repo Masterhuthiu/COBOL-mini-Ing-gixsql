@@ -1,16 +1,26 @@
-COBOL=cobc
-GIX=gixsql
+COBOL = cobc
+SQLPP = gixsql
 
-SRC=$(wildcard src/**/*.cbl)
-OBJ=$(SRC:.cbl=.o)
+SRC = src
+DB = db
 
-all: ingenium
+all: app
 
-precompile:
-	$(GIX) src/db/db_policy.cbl
+policy_insert.cob:
+	$(SQLPP) $(DB)/policy_insert.cbl
 
-compile:
-	$(COBOL) -x -free -o ingenium $(SRC) -lpq
+policy_select.cob:
+	$(SQLPP) $(DB)/policy_select.cbl
+
+app: policy_insert.cob policy_select.cob
+	$(COBOL) -x -o app \
+	$(SRC)/main.cbl \
+	$(SRC)/policy_service.cbl \
+	$(SRC)/standard_policy.cbl \
+	$(SRC)/health_policy.cbl \
+	$(SRC)/rider_service.cbl \
+	policy_insert.cob \
+	policy_select.cob
 
 clean:
-	rm -f ingenium *.o
+	rm -f app *.cob

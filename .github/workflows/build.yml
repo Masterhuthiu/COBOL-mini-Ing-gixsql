@@ -2,7 +2,7 @@ name: COBOL Build
 
 on:
   push:
-  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
@@ -10,17 +10,22 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v3
 
-    - name: Install GnuCOBOL
+    - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y gnucobol
+        sudo apt install -y gnucobol make gcc postgresql-client
 
-    - name: Install PostgreSQL client
+    - name: Install GixSQL
       run: |
-        sudo apt install -y libpq-dev
+        git clone https://github.com/mridoni/gixsql.git
+        cd gixsql
+        ./configure
+        make
+        sudo make install
 
     - name: Build project
       run: |
-        make compile
+        make

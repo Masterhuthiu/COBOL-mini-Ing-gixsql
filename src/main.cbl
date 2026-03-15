@@ -1,24 +1,16 @@
-       identification division.
-       program-id. main.
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. MAIN.
 
-       data division.
-       working-storage section.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       COPY "../copy/policy.cpy".
 
-       01 life object reference LifePolicy.
-       01 rider1 object reference Rider.
+       PROCEDURE DIVISION.
 
-       01 total pic 9(9)v99.
+           MOVE "P001" TO POLICY-ID
+           MOVE "JOHN DOE" TO CUSTOMER-NAME
+           MOVE "HEALTH" TO POLICY-TYPE
 
-       procedure division.
+           CALL "POLICYSERVICE"
 
-           invoke LifePolicy "new" returning life
-           invoke life "setPolicy" using "LIFE001" 1000
-
-           invoke Rider "new" returning rider1
-           invoke rider1 "setRider" using "Accident" 200
-
-           invoke life "calcPremium" returning total
-
-           display "Life Premium = " total
-
-           stop run.
+           STOP RUN.

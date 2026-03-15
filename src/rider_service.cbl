@@ -1,14 +1,14 @@
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. STANDARDPOLICY.
+       PROGRAM-ID. RIDERSERVICE.
 
        DATA DIVISION.
        WORKING-STORAGE SECTION.
-       COPY "../copy/policy.cpy".
+       COPY "../copy/rider.cpy".
 
        PROCEDURE DIVISION.
 
-           IF POLICY-TYPE = "STANDARD"
-               COMPUTE PREMIUM = 1000
+           IF RIDER-TYPE = "ACCIDENT"
+               ADD 200 TO RIDER-PREMIUM
            END-IF.
 
            GOBACK.

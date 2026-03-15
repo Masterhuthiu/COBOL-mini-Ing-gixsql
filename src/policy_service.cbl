@@ -1,5 +1,5 @@
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. STANDARDPOLICY.
+       PROGRAM-ID. POLICYSERVICE.
 
        DATA DIVISION.
        WORKING-STORAGE SECTION.
@@ -7,8 +7,11 @@
 
        PROCEDURE DIVISION.
 
-           IF POLICY-TYPE = "STANDARD"
-               COMPUTE PREMIUM = 1000
-           END-IF.
+           CALL "STANDARDPOLICY".
+           CALL "HEALTHPOLICY".
+
+           CALL "POLICYINSERT".
+
+           DISPLAY "POLICY SAVED"
 
            GOBACK.

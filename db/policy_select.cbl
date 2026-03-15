@@ -5,7 +5,7 @@
        WORKING-STORAGE SECTION.
 
        EXEC SQL INCLUDE SQLCA END-EXEC.
-       COPY "db/policy.cpy".
+       COPY "policy.cpy".
 
        PROCEDURE DIVISION.
 

@@ -4,12 +4,13 @@ BIN_DIR = bin
 SRC_DIR = src
 DB_DIR = db
 CPY_DIR = copy
-# Đường dẫn mặc định của ocesql trên Ubuntu
+# Đường dẫn chuẩn của ocesql sau khi cài đặt trên Ubuntu
 OCESQL_SHARE = /usr/local/share/ocesql
 
-# Thêm --inc cho cả thư mục copy của bạn và thư viện hệ thống
+# Tham số ocesql: --inc cho copybook của bạn và sqlca của hệ thống
 SQLPP_FLAGS = --inc=./$(CPY_DIR) --inc=$(OCESQL_SHARE)
-# Bổ sung -I cho cobc để tìm thấy sqlca.cbl
+
+# Tham số cobc: -I để nạp sqlca.cbl và các copybook vào quá trình biên dịch
 COBFLAGS = -x -I$(CPY_DIR) -I$(OCESQL_SHARE) -locesql
 
 all: clean prep build
@@ -24,12 +25,12 @@ build:
 		echo "Processing $$f..."; \
 		if grep -q "EXEC SQL" "$$f"; then \
 			$(SQLPP) $(SQLPP_FLAGS) "$$f"; \
-			# Xử lý tiền tố preeql do ocesql v1.4.0 tạo ra \
+			# Xử lý tiền tố 'preeql' do ocesql v1.4.0 tạo ra \
 			if [ -f "preeql$$base.cob" ]; then mv "preeql$$base.cob" "$${f%.cbl}.cob"; fi; \
 			if [ -f "$${f%.cbl}.cob" ]; then \
 				$(COBOL) $(COBFLAGS) "$${f%.cbl}.cob" -o $(BIN_DIR)/$$base; \
 			else \
-				echo "  ERROR: Failed to generate $$base.cob"; exit 1; \
+				echo "  ERROR: Generated file not found for $$base"; exit 1; \
 			fi; \
 		else \
 			$(COBOL) $(COBFLAGS) "$$f" -o $(BIN_DIR)/$$base; \

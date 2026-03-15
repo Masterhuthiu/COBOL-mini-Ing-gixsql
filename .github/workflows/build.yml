@@ -39,7 +39,16 @@ jobs:
       run: |
         which ocesql
         ocesql --version
+    - name: Fix Source Formatting
+      run: |
+        # Thêm dòng trống vào cuối tất cả file cbl và cpy nếu chưa có
+        find . -name "*.cbl" -exec sed -i -e '$a\' {} \;
+        find . -name "*.cpy" -exec sed -i -e '$a\' {} \;
 
+    - name: Build with Makefile
+      run: |
+        sudo ldconfig
+        make
     - name: Build project
       run: |
         make

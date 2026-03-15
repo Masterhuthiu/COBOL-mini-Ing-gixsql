@@ -5,8 +5,8 @@ SRC_DIR = src
 DB_DIR = db
 CPY_DIR = copy
 
-# Thêm thư mục copy vào đường dẫn tìm kiếm của ocesql bằng tham số -I
-SQLPP_FLAGS = -I./$(CPY_DIR)
+# Cập nhật tham số include đúng cho ocesql v1.4.0
+SQLPP_FLAGS = --inc=./$(CPY_DIR)
 COBFLAGS = -x -I$(CPY_DIR) -locesql
 
 all: clean prep build
@@ -22,12 +22,11 @@ build:
 		if grep -q "EXEC SQL" "$$f"; then \
 			echo "  --> Running ocesql..."; \
 			$(SQLPP) $(SQLPP_FLAGS) "$$f"; \
-			# Kiểm tra các vị trí file .cob có thể xuất hiện \
-			if [ -f "$$base.cob" ]; then mv "$$base.cob" "$${f%.cbl}.cob"; fi; \
+			# Ocesql mặc định tạo file .cob cùng thư mục với file .cbl nguồn \
 			if [ -f "$${f%.cbl}.cob" ]; then \
 				$(COBOL) $(COBFLAGS) "$${f%.cbl}.cob" -o $(BIN_DIR)/$$base; \
 			else \
-				echo "  ERROR: ocesql failed to generate $$base.cob. Check syntax in $$f"; \
+				echo "  ERROR: ocesql failed to generate $${f%.cbl}.cob"; \
 				exit 1; \
 			fi; \
 		else \

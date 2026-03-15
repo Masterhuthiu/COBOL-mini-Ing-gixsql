@@ -69,4 +69,5 @@ jobs:
         export COB_LIBRARY_PATH=/usr/local/lib
         echo "Check OCESQL modules"
         find /usr/local -name "OCESQL*.so"
+        find /tmp -name "OCESQL*.so"
         ./bin/test_policy

@@ -71,7 +71,7 @@
 #           name: cobol-app
 #           path: app
 
-name: COBOL Docker Build
+name: COBOL Build with GixSQL Cache
 
 on:
   push:
@@ -82,36 +82,56 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    # Sử dụng Docker Container đã cài sẵn GnuCOBOL và GixSQL
-    container:
-      image: mridoni/gixsql:latest
 
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Install Database Libraries
+      - name: Install System Dependencies
         run: |
-          # Container đã có sẵn các công cụ, chỉ cần cài thêm header cho DB nếu cần
-          apt-get update
-          apt-get install -y libpq-dev
+          sudo apt-get update
+          sudo apt-get install -y \
+            gnucobol gcc g++ make autoconf automake libtool \
+            flex bison libpq-dev libspdlog-dev libfmt-dev \
+            libncurses5-dev libdb-dev
 
-      - name: Build Application with Makefile
+      - name: Cache GixSQL Binary
+        id: cache-gixsql
+        uses: actions/cache@v3
+        with:
+          path: /usr/local
+          key: ${{ runner.os }}-gixsql-v1
+
+      - name: Install GixSQL (Only if not cached)
+        if: steps.cache-gixsql.outputs.cache-hit != 'true'
         run: |
-          # Xóa các file cũ
+          git clone https://github.com/mridoni/gixsql.git
+          cd gixsql
+          # Sửa lỗi mã nguồn trực tiếp
+          sed -i '1i #include <cstdint>' libgixpp/ESQLDefinitions.h
+          touch extra_files.mk
+          # Quy trình build chuẩn
+          libtoolize --force
+          aclocal
+          autoheader
+          automake --force-missing --add-missing
+          autoconf
+          ./configure --disable-dependency-tracking
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build COBOL Project
+        run: |
+          # Cập nhật link thư viện nếu lấy từ cache
+          sudo ldconfig
+          # Thực hiện build project của bạn
           make clean
-          
-          # Tạo thư mục build nếu Makefile của bạn yêu cầu
-          mkdir -p build
-          
-          # Chạy lệnh build
-          # Makefile sẽ tự động gọi gixsql và cobc có sẵn trong PATH của container
+          make prep || true
           make
 
-      - name: Upload Binary Artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cobol-executable
+          name: cobol-app
           path: app
-          retention-days: 5

@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
-    # Sử dụng container có sẵn GixSQL để không phải tự build GixSQL nữa
+    # SỬ DỤNG CONTAINER: Đây là chìa khóa để bỏ qua bước build GixSQL bị lỗi
     container:
       image: mridoni/gixsql:latest
 
@@ -20,19 +20,18 @@ jobs:
 
       - name: Install Database Headers
         run: |
-          # Cài đặt thư viện để kết nối PostgreSQL (nếu bạn dùng DB khác hãy đổi tên lib)
+          # Cài đặt thư viện để kết nối PostgreSQL (libpq)
           apt-get update
           apt-get install -y libpq-dev
 
       - name: Build Application
         run: |
-          # Xóa các file cũ và tạo thư mục build nếu cần
-          # Lệnh 'make' sẽ tự động chạy theo file Makefile của bạn
+          # Lệnh make sẽ tự động sử dụng gixsql và cobc có sẵn trong container
           make clean
-          mkdir -p build
+          make prep || true
           make
 
-      - name: Upload Artifact
+      - name: Upload Binary
         uses: actions/upload-artifact@v4
         with:
           name: cobol-app

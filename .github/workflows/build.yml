@@ -1,77 +1,147 @@
-name: Build COBOL
+# name: Build COBOL
+
+# on:
+#   push:
+#   pull_request:
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+
+#     steps:
+
+#     - name: Checkout
+#       uses: actions/checkout@v3
+
+#     - name: Install dependencies
+#       run: |
+#         sudo apt update
+#         sudo apt install -y \
+#             gnucobol \
+#             build-essential \
+#             autoconf \
+#             automake \
+#             libtool \
+#             libpq-dev \
+#             git
+
+#     - name: Install Open-COBOL-ESQL
+#       run: |
+#         git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git
+#         cd Open-COBOL-ESQL
+#         chmod +x autogen.sh && ./autogen.sh
+#         export YACC="bison -y"
+#         export CPPFLAGS="-I/usr/include/postgresql"
+#         ./configure
+#         make
+#         sudo make install
+#         echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/ocesql.conf
+#         sudo ldconfig
+#         ldconfig -p | grep ocesql
+
+#     - name: Verify install
+#       run: |
+#         which ocesql
+#         ocesql --version
+#     - name: Fix Source Formatting
+#       run: |
+#         # Thêm dòng trống vào cuối tất cả file cbl và cpy nếu chưa có
+#         find . -name "*.cbl" -exec sed -i -e '$a\' {} \;
+#         find . -name "*.cpy" -exec sed -i -e '$a\' {} \;
+#     - name: Copy SQLCA
+#       run: |
+#         mkdir -p copy
+#         cp /usr/local/share/ocesql/sqlca.cbl copy/ || true
+#         cp /usr/local/share/ocesql/copy/sqlca.cbl copy/ || true
+
+#     - name: Build with Makefile
+#       run: |
+#         sudo ldconfig
+#         make
+#     - name: Build project
+#       run: |
+#         make
+#     - name: Run policy test
+#       env:
+#         PGHOST: localhost
+#         PGPORT: 5432
+#         PGUSER: postgres
+#         PGPASSWORD: postgres
+#         PGDATABASE: testdb
+#       run: |
+#         export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+#         export COB_LIBRARY_PATH=/usr/local/lib
+#         echo "========== CHECK OCESQL MODULES =========="
+#         find /usr/local -name "OCESQL*.so" || true
+#         ls -la /usr/local/lib/ocesql || true
+#         ./bin/test_policy
+
+
+name: Otterkit COBOL Build & Test
 
 on:
   push:
+    branches: [ main ]
   pull_request:
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
 
-    - name: Checkout
-      uses: actions/checkout@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
 
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y \
-            gnucobol \
-            build-essential \
-            autoconf \
-            automake \
-            libtool \
-            libpq-dev \
-            git
+      - name: Install Otterkit
+        run: |
+          dotnet tool install --global Otterkit
 
-    - name: Install Open-COBOL-ESQL
-      run: |
-        git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git
-        cd Open-COBOL-ESQL
-        chmod +x autogen.sh && ./autogen.sh
-        export YACC="bison -y"
-        export CPPFLAGS="-I/usr/include/postgresql"
-        ./configure
-        make
-        sudo make install
-        echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/ocesql.conf
-        sudo ldconfig
-        ldconfig -p | grep ocesql
+      - name: Install Npgsql driver
+        run: |
+          dotnet new console -o cobolapp
+          cd cobolapp
+          dotnet add package Npgsql
 
-    - name: Verify install
-      run: |
-        which ocesql
-        ocesql --version
-    - name: Fix Source Formatting
-      run: |
-        # Thêm dòng trống vào cuối tất cả file cbl và cpy nếu chưa có
-        find . -name "*.cbl" -exec sed -i -e '$a\' {} \;
-        find . -name "*.cpy" -exec sed -i -e '$a\' {} \;
-    - name: Copy SQLCA
-      run: |
-        mkdir -p copy
-        cp /usr/local/share/ocesql/sqlca.cbl copy/ || true
-        cp /usr/local/share/ocesql/copy/sqlca.cbl copy/ || true
+      - name: Setup database schema
+        run: |
+          psql -h localhost -U postgres -d testdb -c "CREATE TABLE IF NOT EXISTS emp (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100),
+            age INT
+          );"
+        env:
+          PGPASSWORD: postgres
 
-    - name: Build with Makefile
-      run: |
-        sudo ldconfig
-        make
-    - name: Build project
-      run: |
-        make
-    - name: Run policy test
-      env:
-        PGHOST: localhost
-        PGPORT: 5432
-        PGUSER: postgres
-        PGPASSWORD: postgres
-        PGDATABASE: testdb
-      run: |
-        export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-        export COB_LIBRARY_PATH=/usr/local/lib
-        echo "========== CHECK OCESQL MODULES =========="
-        find /usr/local -name "OCESQL*.so" || true
-        ls -la /usr/local/lib/ocesql || true
-        ./bin/test_policy
+      - name: Compile COBOL program
+        run: |
+          otterkit build src/EmployeeRepo.cob -o cobolapp/bin/Debug/net8.0/EmployeeRepo.dll
+
+      - name: Run COBOL program
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: testdb
+        run: |
+          dotnet cobolapp/bin/Debug/net8.0/EmployeeRepo.dll

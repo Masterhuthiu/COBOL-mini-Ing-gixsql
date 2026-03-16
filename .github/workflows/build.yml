@@ -47,37 +47,19 @@ jobs:
       - name: Verify Otterkit
         run: otterkit --version
 
-      - name: Create Otterkit project
+      - name: Create Otterkit project in temp dir
         run: |
-          otterkit new application --name cobolapp --output cobolapp
-          echo "=== Full structure after new ==="
-          find cobolapp -type f | sort
-          echo "=== Top level files ==="
-          ls -la cobolapp/
-
-      - name: Ensure csproj exists
-        run: |
-          CSPROJ=$(find cobolapp -name "*.csproj" | head -1)
-          if [ -z "$CSPROJ" ]; then
-            cat > cobolapp/cobolapp.csproj << 'CSPROJ'
-            <Project Sdk="Microsoft.NET.Sdk">
-              <PropertyGroup>
-                <OutputType>Exe</OutputType>
-                <TargetFramework>net8.0</TargetFramework>
-                <Nullable>enable</Nullable>
-                <ImplicitUsings>enable</ImplicitUsings>
-              </PropertyGroup>
-            </Project>
-            CSPROJ
-          fi
-          echo "=== Final structure ==="
-          find cobolapp -type f | sort
+          mkdir -p cobolapp
+          cd cobolapp
+          otterkit new application --name cobolapp
+          echo "=== Structure after new (inside cobolapp/) ==="
+          find . -type f | sort
+          ls -la
 
       - name: Copy COBOL source into project
         run: |
-          mkdir -p cobolapp/src
-          cp src/main.cob         cobolapp/src/main.cob
-          cp src/EmployeeRepo.cob cobolapp/src/EmployeeRepo.cob
+          cp src/main.cbl         cobolapp/src/main.cbl
+          cp src/EmployeeRepo.cbl cobolapp/src/EmployeeRepo.cbl
           echo "=== cobolapp/src/ ==="
           ls -la cobolapp/src/
 
@@ -85,6 +67,7 @@ jobs:
         working-directory: cobolapp
         run: |
           CSPROJ=$(find . -name "*.csproj" | head -1)
+          echo "Found: $CSPROJ"
           dotnet add "$CSPROJ" package Npgsql --version 8.0.3
 
       - name: Setup database schema
@@ -97,6 +80,7 @@ jobs:
               name VARCHAR(100),
               age  INT
             );"
+          echo "Schema OK"
           psql -h localhost -U postgres -d testdb -c "\dt"
 
       - name: Build project
@@ -121,4 +105,5 @@ jobs:
           PGPASSWORD: postgres
         run: |
           echo "=== emp TABLE ==="
-          psql -h localhost -U postgres -d testdb -c "SELECT * FROM emp;"
+          psql -h localhost -U postgres -d testdb \
+            -c "SELECT * FROM emp;"

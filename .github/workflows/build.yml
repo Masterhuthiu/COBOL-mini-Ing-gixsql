@@ -40,35 +40,28 @@ jobs:
 
       - name: Install Otterkit
         run: |
-          dotnet new install Otterkit.Templates::1.0.45-alpha
           dotnet tool install --global Otterkit --version 1.0.50-alpha
           echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
       - name: Verify Otterkit
         run: otterkit --version
 
-      - name: Create Otterkit project in temp dir
+      - name: Create .NET project
         run: |
-          mkdir -p cobolapp
-          cd cobolapp
-          otterkit new application --name cobolapp
-          echo "=== Structure after new (inside cobolapp/) ==="
-          find . -type f | sort
-          ls -la
-
-      - name: Copy COBOL source into project
-        run: |
-          cp src/main.cbl         cobolapp/src/main.cbl
-          cp src/EmployeeRepo.cbl cobolapp/src/EmployeeRepo.cbl
-          echo "=== cobolapp/src/ ==="
-          ls -la cobolapp/src/
+          dotnet new console -o cobolapp
+          ls -la cobolapp/
 
       - name: Add Npgsql to project
         working-directory: cobolapp
         run: |
-          CSPROJ=$(find . -name "*.csproj" | head -1)
-          echo "Found: $CSPROJ"
-          dotnet add "$CSPROJ" package Npgsql --version 8.0.3
+          dotnet add package Npgsql --version 8.0.3
+
+      - name: Copy COBOL source
+        run: |
+          mkdir -p cobolapp/src
+          cp src/main.cbl cobolapp/src/main.cbl
+          cp src/EmployeeRepo.cbl cobolapp/src/EmployeeRepo.cbl
+          ls -la cobolapp/src/
 
       - name: Setup database schema
         env:
@@ -80,15 +73,11 @@ jobs:
               name VARCHAR(100),
               age  INT
             );"
-          echo "Schema OK"
           psql -h localhost -U postgres -d testdb -c "\dt"
 
-      - name: Build project
-        working-directory: cobolapp
+      - name: Compile COBOL program
         run: |
-          dotnet build -c Debug
-          echo "=== Build output ==="
-          find bin -type f 2>/dev/null | sort || true
+          otterkit build cobolapp/src/main.cob cobolapp/src/EmployeeRepo.cob -o cobolapp/bin/Debug/net8.0/Program.dll
 
       - name: Run COBOL program
         working-directory: cobolapp
@@ -105,5 +94,4 @@ jobs:
           PGPASSWORD: postgres
         run: |
           echo "=== emp TABLE ==="
-          psql -h localhost -U postgres -d testdb \
-            -c "SELECT * FROM emp;"
+          psql -h localhost -U postgres -d testdb -c "SELECT * FROM emp;"

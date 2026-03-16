@@ -18,11 +18,6 @@ jobs:
           POSTGRES_DB: testdb
         ports:
           - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Checkout source
@@ -49,11 +44,7 @@ jobs:
       - name: Create .NET project
         run: |
           dotnet new console -o cobolapp
-          ls -la cobolapp/
-
-      - name: Add Npgsql to project
-        working-directory: cobolapp
-        run: |
+          cd cobolapp
           dotnet add package Npgsql --version 8.0.3
 
       - name: Copy COBOL source
@@ -73,7 +64,6 @@ jobs:
               name VARCHAR(100),
               age  INT
             );"
-          psql -h localhost -U postgres -d testdb -c "\dt"
 
       - name: Compile COBOL program
         run: |
@@ -93,5 +83,4 @@ jobs:
         env:
           PGPASSWORD: postgres
         run: |
-          echo "=== emp TABLE ==="
           psql -h localhost -U postgres -d testdb -c "SELECT * FROM emp;"

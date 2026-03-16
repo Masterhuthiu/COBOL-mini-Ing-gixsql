@@ -1,8 +1,0 @@
-{
-    "id": "MyCobolApp",
-    "type": "app",
-    "entry": "src/main.cob",
-    "source": [
-        "src"
-    ]
-}

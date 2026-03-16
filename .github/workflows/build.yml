@@ -59,7 +59,7 @@ jobs:
       - name: Copy COBOL source
         run: |
           mkdir -p cobolapp/src
-          cp src/main.cob cobolapp/src/main.cob
+          cp src/Main.cob cobolapp/src/Main.cob
           cp src/EmployeeRepo.cob cobolapp/src/EmployeeRepo.cob
           ls -la cobolapp/src/
 
@@ -77,7 +77,7 @@ jobs:
 
       - name: Compile COBOL program
         run: |
-          otterkit build cobolapp/src/main.cob cobolapp/src/EmployeeRepo.cob -o cobolapp/bin/Debug/net8.0/Program.dll
+          otterkit build cobolapp/src/Main.cob cobolapp/src/EmployeeRepo.cob -o cobolapp/bin/Debug/net8.0/Program.dll
 
       - name: Run COBOL program
         working-directory: cobolapp

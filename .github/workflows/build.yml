@@ -1,14 +1,12 @@
-name: Otterkit COBOL Build & Test
+name: Build and Test Otterkit App
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
+on: [push, pull_request]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
+    # Khởi động database PostgreSQL tạm thời
     services:
       postgres:
         image: postgres:15
@@ -18,69 +16,41 @@ jobs:
           POSTGRES_DB: testdb
         ports:
           - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
-      - name: Checkout source
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup .NET 7
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '7.0.x'
-
-      - name: Setup .NET 8
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Install Otterkit
+      # Cài đặt công cụ biên dịch Otterkit
+      - name: Install Otterkit Tool
+        run: dotnet tool install --global Otterkit
+
+      # Khôi phục các thư viện (Npgsql, Otterkit.Runtime) khai báo trong .csproj
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # Tạo bảng trong Postgres để code COBOL không bị lỗi khi chạy
+      - name: Initialize Database
         run: |
-          dotnet tool install --global Otterkit --version 1.0.50-alpha
-          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+          PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "
+          CREATE TABLE IF NOT EXISTS emp (
+              id SERIAL PRIMARY KEY,
+              name TEXT,
+              age INT
+          );"
 
-      - name: Verify Otterkit
-        run: otterkit --version
-
-      - name: Create .NET project
+      # Biên dịch COBOL và chạy ứng dụng
+      - name: Build and Run
         run: |
-          dotnet new console -o cobolapp
-          cd cobolapp
-          dotnet add package Npgsql --version 8.0.3
-
-      - name: Copy COBOL source
-        run: |
-          mkdir -p cobolapp/src
-          cp src/main.cob cobolapp/src/main.cob
-          cp src/EmployeeRepo.cob cobolapp/src/EmployeeRepo.cob
-          ls -la cobolapp/src/
-
-      - name: Setup database schema
-        env:
-          PGPASSWORD: postgres
-        run: |
-          psql -h localhost -U postgres -d testdb -c "
-            CREATE TABLE IF NOT EXISTS emp (
-              id   SERIAL PRIMARY KEY,
-              name VARCHAR(100),
-              age  INT
-            );"
-
-      - name: Compile COBOL program
-        run: |
-          otterkit build cobolapp/src/main.cob cobolapp/src/EmployeeRepo.cob -o cobolapp/bin/Debug/net8.0/Program.dll
-
-      - name: Run COBOL program
-        working-directory: cobolapp
-        env:
-          PGHOST: localhost
-          PGPORT: 5432
-          PGUSER: postgres
-          PGPASSWORD: postgres
-          PGDATABASE: testdb
-        run: dotnet run
-
-      - name: Verify DB
-        env:
-          PGPASSWORD: postgres
-        run: |
-          psql -h localhost -U postgres -d testdb -c "SELECT * FROM emp;"
+          otterkit build
+          dotnet run --project MyCobolApp.csproj

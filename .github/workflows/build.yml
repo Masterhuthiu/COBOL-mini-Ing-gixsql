@@ -1,57 +1,11 @@
-name: Build and Test Otterkit App
-
-on: [push, pull_request]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: testdb
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup .NET Sessions
-        uses: actions/setup-dotnet@v4
-        with:
-          # Cài cả 7.0 để chạy tool Otterkit và 8.0 để build app
-          dotnet-version: |
-            7.0.x
-            8.0.x
-
-      - name: Install Otterkit Tool
-        run: dotnet tool install --global Otterkit
-
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Initialize Database Schema
-        run: |
-          PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "
-          CREATE TABLE IF NOT EXISTS emp (
-              id SERIAL PRIMARY KEY,
-              name TEXT,
-              age INT
-          );"
+# ... các bước trước giữ nguyên ...
 
       - name: Build and Run
         env:
-          # Ép .NET chạy các tool cũ trên runtime mới nếu cần
           DOTNET_ROLL_FORWARD: Major
         run: |
+          # 1. Biên dịch COBOL sang C# dựa trên otterkit.json
           otterkit build
+          
+          # 2. Chạy project .NET với mã đã chuyển đổi
           dotnet run --project MyCobolApp.csproj

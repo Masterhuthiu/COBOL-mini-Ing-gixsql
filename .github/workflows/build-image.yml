@@ -9,6 +9,7 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   REGISTRY: ghcr.io
+  # IMAGE_NAME gốc có thể chứa chữ hoa
   IMAGE_NAME: ${{ github.repository }}/mini-ingenium-dotnet
 
 jobs:
@@ -21,6 +22,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # BƯỚC QUAN TRỌNG: Chuyển tên Image về chữ thường để tránh lỗi Docker Registry
+      - name: Lowercase Registry Image Name
+        run: |
+          echo "IMAGE_NAME_LOWER=${IMAGE_NAME,,}" >> $GITHUB_ENV
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -37,7 +45,8 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          # Sử dụng biến đã được lowercase ở đây
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -64,7 +73,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # QUAN TRỌNG: Cài đặt cả .NET 8 (cho App) và .NET 7 (cho Otterkit)
+      # Cài đặt cả .NET 7 (cho Otterkit) và .NET 8 (cho App)
       - name: Setup .NET Runtimes
         uses: actions/setup-dotnet@v4
         with:
@@ -82,9 +91,9 @@ jobs:
 
       - name: Compile COBOL
         run: |
-          # Otterkit sẽ tìm thấy .NET 7.0 đã cài ở trên và chạy thành công
+          # Otterkit chạy trên .NET 7 sẽ không còn lỗi Exit Code 150
           otterkit build --type library --path cobol/EmployeeRepo.cbl
-          echo "COBOL Compiled"
+          echo "COBOL Library Generated"
 
       - name: Build
         run: |
@@ -117,19 +126,19 @@ jobs:
             sleep 1
           done
 
-      - name: Test Employee Endpoints (COBOL Bridge)
+      - name: Test Employee Endpoints (Verify COBOL)
         run: |
-          echo "=== ADDING EMPLOYEE VIA COBOL ==="
+          echo "=== TEST: ADD EMPLOYEE VIA COBOL ==="
           curl -sf -X POST http://localhost:5000/api/employee/add \
             -H "Content-Type: application/json" \
-            -d '{"name": "Nguyen Van COBOL", "age": 40}' | python3 -m json.tool
+            -d '{"name": "GitHub Action Bot", "age": 25}' | python3 -m json.tool
 
-          echo "=== LISTING EMPLOYEES ==="
+          echo "=== TEST: LIST EMPLOYEES ==="
           curl -sf http://localhost:5000/api/employee/list | python3 -m json.tool
 
-      - name: Verify Final DB State
+      - name: Verify DB Final State
         env:
           PGPASSWORD: postgres
         run: |
-          echo "=== EMP TABLE CONTENT ==="
+          echo "=== CHECKING DB TABLE: EMP ==="
           psql -h localhost -U postgres -d ingenium -c "SELECT * FROM emp;"

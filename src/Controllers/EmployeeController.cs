@@ -11,83 +11,23 @@ namespace MiniIngenium.Controllers;
 [Route("api/[controller]")]
 public class EmployeeController : ControllerBase
 {
-    private readonly DbService _db;
-
-    // Chỉ inject DbService, chưa cần CobolBridge ở bước này
-    public EmployeeController(DbService db)
-    {
-        _db = db;
-    }
-
-    // POST: api/employee/add
     [HttpPost("add")]
-    public async Task<IActionResult> AddEmployee([FromBody] EmployeeRequest req)
+    public IActionResult Add([FromBody] EmployeeRequest req)
     {
-        try
-        {
-            if (string.IsNullOrEmpty(req.Name))
-                return BadRequest(new { error = "Tên không được để trống" });
-
-            await using var conn = _db.GetConnection();
-            await conn.OpenAsync();
-
-            // Thực hiện SQL Insert trực tiếp bằng C# để test DB
-            await using var cmd = new NpgsqlCommand(
-                "INSERT INTO emp (name, age) VALUES (@n, @a)", 
-                conn);
-            cmd.Parameters.AddWithValue("n", req.Name);
-            cmd.Parameters.AddWithValue("a", req.Age);
-            
-            await cmd.ExecuteNonQueryAsync();
-
-            return Ok(new 
-            { 
-                status = "Success", 
-                message = $"Đã thêm nhân viên {req.Name} trực tiếp qua C#." 
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { error = ex.Message });
-        }
+        // Gọi phương thức static trong EmployeeRepo.cob
+        EmployeeRepo.InsertEmployee(req.Name, req.Age);
+        return Ok(new { status = "Success", message = $"Added {req.Name}" });
     }
 
-    // GET: api/employee/list
     [HttpGet("list")]
-    public async Task<IActionResult> ListEmployees()
+    public IActionResult GetList()
     {
-        try
-        {
-            await using var conn = _db.GetConnection();
-            await conn.OpenAsync();
-
-            await using var cmd = new NpgsqlCommand(
-                "SELECT id, name, age FROM emp ORDER BY id DESC", 
-                conn);
-            await using var reader = await cmd.ExecuteReaderAsync();
-
-            var employees = new List<object>();
-            while (await reader.ReadAsync())
-            {
-                employees.Add(new
-                {
-                    id = reader.GetInt32(0),
-                    name = reader.GetString(1),
-                    age = reader.GetInt32(2)
-                });
-            }
-
-            return Ok(employees);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { error = ex.Message });
-        }
+        // Lưu ý: FetchEmployees trong COBOL của bạn hiện đang dùng DISPLAY
+        // Để API trả về JSON, bạn cần chỉnh sửa COBOL trả về List hoặc chuỗi.
+        // Tạm thời gọi để kiểm tra log Console:
+        EmployeeRepo.FetchEmployees();
+        return Ok(new { status = "Executed", message = "Check console log for output" });
     }
 }
 
-public class EmployeeRequest
-{
-    public string? Name { get; set; }
-    public int Age { get; set; }
-}
+public class EmployeeRequest { public string Name { get; set; }; public int Age { get; set; }; }

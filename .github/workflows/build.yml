@@ -139,7 +139,7 @@ jobs:
 
       - name: Compile COBOL program
         run: |
-          otterkit build src/EmployeeRepo.cob -o cobolapp/bin/Debug/net8.0/EmployeeRepo.dll
+          otterkit build src/Main.cob src/EmployeeRepo.cob -o cobolapp/bin/Debug/net8.0/Program.dll
 
       - name: Run COBOL program
         env:

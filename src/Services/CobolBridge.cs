@@ -30,25 +30,5 @@ public class CobolBridge
     {
         return _logic.CalculateBilling(premium, months);
     }
-// ============================================================
-    // PHẦN MỚI: KẾT NỐI VỚI EMPLOYEE REPO (COBOL OOP)
-    // ============================================================
 
-    /// <summary>
-    /// Gọi sang COBOL để thực hiện INSERT nhân viên vào database
-    /// </summary>
-    public void AddEmployee(string name, int age)
-    {
-        // Sử dụng global:: để gọi đúng class EmployeeRepo từ COBOL
-        // Otterkit biên dịch METHOD-ID thành các phương thức C# tương ứng
-        global::EmployeeRepo.InsertEmployee(name, age);
-    }
-
-    /// <summary>
-    /// Gọi sang COBOL để thực hiện SELECT và DISPLAY danh sách nhân viên
-    /// </summary>
-    public void FetchEmployees()
-    {
-        global::EmployeeRepo.FetchEmployees();
-    }
 }

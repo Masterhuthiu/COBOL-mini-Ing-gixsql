@@ -89,7 +89,7 @@ jobs:
         run: |
           # SỬA LỖI COB0950: Thêm tham số --entry để chỉ định file nguồn thay vì tìm main.cob
           # Sử dụng --path để trỏ trực tiếp đến thư mục hoặc file cụ thể
-          otterkit build --type library --entry cobol/EmployeeRepo.cbl
+          otterkit build --type library --entry cobol/EmployeeRepo.cob
           echo "COBOL Library Generated Successfully"
 
       - name: Build

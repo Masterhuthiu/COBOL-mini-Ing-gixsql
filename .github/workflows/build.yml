@@ -1,82 +1,3 @@
-# name: Build COBOL
-
-# on:
-#   push:
-#   pull_request:
-
-# jobs:
-#   build:
-#     runs-on: ubuntu-latest
-
-#     steps:
-
-#     - name: Checkout
-#       uses: actions/checkout@v3
-
-#     - name: Install dependencies
-#       run: |
-#         sudo apt update
-#         sudo apt install -y \
-#             gnucobol \
-#             build-essential \
-#             autoconf \
-#             automake \
-#             libtool \
-#             libpq-dev \
-#             git
-
-#     - name: Install Open-COBOL-ESQL
-#       run: |
-#         git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git
-#         cd Open-COBOL-ESQL
-#         chmod +x autogen.sh && ./autogen.sh
-#         export YACC="bison -y"
-#         export CPPFLAGS="-I/usr/include/postgresql"
-#         ./configure
-#         make
-#         sudo make install
-#         echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/ocesql.conf
-#         sudo ldconfig
-#         ldconfig -p | grep ocesql
-
-#     - name: Verify install
-#       run: |
-#         which ocesql
-#         ocesql --version
-#     - name: Fix Source Formatting
-#       run: |
-#         # Thêm dòng trống vào cuối tất cả file cbl và cpy nếu chưa có
-#         find . -name "*.cbl" -exec sed -i -e '$a\' {} \;
-#         find . -name "*.cpy" -exec sed -i -e '$a\' {} \;
-#     - name: Copy SQLCA
-#       run: |
-#         mkdir -p copy
-#         cp /usr/local/share/ocesql/sqlca.cbl copy/ || true
-#         cp /usr/local/share/ocesql/copy/sqlca.cbl copy/ || true
-
-#     - name: Build with Makefile
-#       run: |
-#         sudo ldconfig
-#         make
-#     - name: Build project
-#       run: |
-#         make
-#     - name: Run policy test
-#       env:
-#         PGHOST: localhost
-#         PGPORT: 5432
-#         PGUSER: postgres
-#         PGPASSWORD: postgres
-#         PGDATABASE: testdb
-#       run: |
-#         export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-#         export COB_LIBRARY_PATH=/usr/local/lib
-#         echo "========== CHECK OCESQL MODULES =========="
-#         find /usr/local -name "OCESQL*.so" || true
-#         ls -la /usr/local/lib/ocesql || true
-#         ./bin/test_policy
-
-
 name: Otterkit COBOL Build & Test
 
 on:
@@ -107,6 +28,13 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      # Otterkit tool itself requires .NET 7 runtime
+      - name: Setup .NET 7 (required by Otterkit CLI)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '7.0.x'
+
+      # Project targets .NET 8
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
@@ -114,19 +42,23 @@ jobs:
 
       - name: Install Otterkit
         run: |
-          dotnet tool install --global Otterkit --version 1.0.80
+          dotnet new install Otterkit.Templates::1.0.45-alpha
+          dotnet tool install --global Otterkit --version 1.0.50-alpha
           echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: Verify Otterkit
+        run: otterkit --version
 
       - name: Create Otterkit project
         run: |
           otterkit new application --name cobolapp
-          echo "=== Project created ==="
+          echo "=== Project structure ==="
           find cobolapp -type f | sort
 
       - name: Copy COBOL source into project
         run: |
-          cp cobol/main.cbl         cobolapp/src/main.cbl
-          cp cobol/EmployeeRepo.cbl cobolapp/src/EmployeeRepo.cbl
+          cp cobol/main.cbl          cobolapp/src/main.cbl
+          cp cobol/EmployeeRepo.cbl  cobolapp/src/EmployeeRepo.cbl
           echo "=== src/ contents ==="
           ls -la cobolapp/src/
 
@@ -147,7 +79,6 @@ jobs:
               age  INT
             );"
           echo "Schema OK"
-          psql -h localhost -U postgres -d testdb -c "\dt"
 
       - name: Build project
         working-directory: cobolapp
@@ -166,11 +97,11 @@ jobs:
           PGDATABASE: testdb
         run: |
           dotnet run
-          echo "=== Verify DB ==="
 
       - name: Verify DB
         env:
           PGPASSWORD: postgres
         run: |
+          echo "=== emp TABLE ==="
           psql -h localhost -U postgres -d testdb \
             -c "SELECT * FROM emp;"

@@ -1,16 +1,16 @@
+      ******************************************************************
+      * Author:
+      * Date:
+      * Purpose:
+      * Tectonics: cobc
+      ******************************************************************
        IDENTIFICATION DIVISION.
-       CLASS-ID. Program.
-
-       METHOD-ID. Main STATIC.
+       PROGRAM-ID. YOUR-PROGRAM-NAME.
        DATA DIVISION.
+       FILE SECTION.
        WORKING-STORAGE SECTION.
-           DECLARE emp TYPE Employee.
        PROCEDURE DIVISION.
-           SET emp::Name TO "Dang".
-           SET emp::Age TO 30.
-
-           INVOKE emp "PrintInfo".
-           GOBACK.
-       END METHOD Main.
-
-       END CLASS Program.
+       MAIN-PROCEDURE.
+            DISPLAY "Hello world"
+            STOP RUN.
+       END PROGRAM YOUR-PROGRAM-NAME.

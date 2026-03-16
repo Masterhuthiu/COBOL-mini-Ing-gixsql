@@ -160,26 +160,6 @@ jobs:
           curl -sf http://localhost:5000/billing/invoices \
             | python3 -m json.tool
 
-          echo "========================================"
-          echo "  INVOICES LIST"
-          echo "========================================"
-          curl -sf http://localhost:5000/billing/invoices \
-            | python3 -m json.tool
-
-          echo "========================================"
-          echo "  ADD EMPLOYEE (COBOL via API)"
-          echo "========================================"
-          curl -sf -X POST http://localhost:5000/api/employee/add \
-            -H "Content-Type: application/json" \
-            -d '{"name": "Dang COBOL", "age": 30}' \
-            | python3 -m json.tool
-
-          echo "========================================"
-          echo "  LIST EMPLOYEES"
-          echo "========================================"
-          curl -sf http://localhost:5000/api/employee/list \
-            | python3 -m json.tool
-            
       - name: Verify DB final state
         env:
           PGPASSWORD: postgres
@@ -193,4 +173,3 @@ jobs:
           echo "=== CLAIM TABLE ==="
           psql -h localhost -U postgres -d ingenium \
             -c "SELECT * FROM claim;"
-

@@ -1,38 +1,59 @@
-       class-id. EmployeeRepo.
+IDENTIFICATION DIVISION.
+       CLASS-ID. EmployeeRepo.
 
-       method-id. InsertEmployee static.
-           procedure division using by value name as string
-                                      by value age as binary-long.
-           declare conn type NpgsqlConnection
-               = new NpgsqlConnection("Host=localhost;Username=postgres;Password=postgres;Database=testdb").
-           invoke conn "Open".
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       REPOSITORY.
+           *> Khai báo các kiểu dữ liệu .NET cần thiết
+           CLASS NpgsqlConnection AS "Npgsql.NpgsqlConnection"
+           CLASS NpgsqlCommand AS "Npgsql.NpgsqlCommand"
+           CLASS NpgsqlDataReader AS "Npgsql.NpgsqlDataReader".
 
-           declare cmd type NpgsqlCommand
-               = new NpgsqlCommand("INSERT INTO emp (name, age) VALUES (@n, @a)", conn).
-           invoke cmd "Parameters.AddWithValue" using "n", name.
-           invoke cmd "Parameters.AddWithValue" using "a", age.
-           invoke cmd "ExecuteNonQuery".
+       STATIC.
+           METHOD-ID. InsertEmployee.
+           DATA DIVISION.
+           LOCAL-STORAGE SECTION.
+               DECLARE conn TYPE NpgsqlConnection.
+               DECLARE cmd TYPE NpgsqlCommand.
+           LINKAGE SECTION.
+               *> Tham số truyền vào từ C#
+               01 empName AS ANY.
+               01 empAge BINARY-LONG.
+           PROCEDURE DIVISION USING BY VALUE empName, empAge.
+               
+               *> Khởi tạo kết nối tới DB (Sử dụng Host=db cho Docker)
+               SET conn TO NEW NpgsqlConnection("Host=db;Username=postgres;Password=postgres;Database=ingenium").
+               INVOKE conn "Open".
 
-           invoke conn "Close".
-       end method InsertEmployee.
+               *> Thực thi lệnh SQL Insert
+               SET cmd TO NEW NpgsqlCommand("INSERT INTO emp (name, age) VALUES (@n, @a)", conn).
+               INVOKE cmd "Parameters.AddWithValue" USING "n", empName.
+               INVOKE cmd "Parameters.AddWithValue" USING "a", empAge.
+               INVOKE cmd "ExecuteNonQuery".
 
-       method-id. FetchEmployees static.
-           procedure division.
-           declare conn type NpgsqlConnection
-               = new NpgsqlConnection("Host=localhost;Username=postgres;Password=postgres;Database=testdb").
-           invoke conn "Open".
+               INVOKE conn "Close".
+           END METHOD InsertEmployee.
 
-           declare cmd type NpgsqlCommand
-               = new NpgsqlCommand("SELECT id, name, age FROM emp", conn).
-           declare reader type NpgsqlDataReader = cmd "ExecuteReader".
+           METHOD-ID. FetchEmployees.
+           DATA DIVISION.
+           LOCAL-STORAGE SECTION.
+               DECLARE conn TYPE NpgsqlConnection.
+               DECLARE cmd TYPE NpgsqlCommand.
+               DECLARE reader TYPE NpgsqlDataReader.
+           PROCEDURE DIVISION.
+               SET conn TO NEW NpgsqlConnection("Host=db;Username=postgres;Password=postgres;Database=ingenium").
+               INVOKE conn "Open".
 
-           while reader "Read"
-               display "ID: " & reader["id"].ToString()
-               display "Tên: " & reader["name"].ToString()
-               display "Tuổi: " & reader["age"].ToString()
-           end-while.
+               SET cmd TO NEW NpgsqlCommand("SELECT name, age FROM emp", conn).
+               SET reader TO INVOKE cmd "ExecuteReader".
 
-           invoke conn "Close".
-       end method FetchEmployees.
+               *> Duyệt và in kết quả ra Console (Log của GitHub Actions/Docker)
+               PERFORM UNTIL NOT INVOKE reader "Read"
+                   DISPLAY "COBOL Log: " INVOKE reader["name"] " | Age: " INVOKE reader["age"]
+               END-PERFORM.
 
-       end class EmployeeRepo.
+               INVOKE conn "Close".
+           END METHOD FetchEmployees.
+       END STATIC.
+
+       END CLASS EmployeeRepo.

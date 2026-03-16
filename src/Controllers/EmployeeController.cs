@@ -1,3 +1,11 @@
+using Microsoft.AspNetCore.Mvc;
+using Npgsql;
+using MiniIngenium.Services;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+
+namespace MiniIngenium.Controllers;
+
 [ApiController]
 [Route("api/[controller]")]
 public class EmployeeController : ControllerBase

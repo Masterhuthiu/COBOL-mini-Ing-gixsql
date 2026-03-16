@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using System;
 
 namespace MiniIngenium.Controllers
 {
@@ -12,13 +11,12 @@ namespace MiniIngenium.Controllers
         {
             try
             {
-                // Gọi class từ COBOL (Otterkit biên dịch class-id thành class .NET)
-                // Nếu file COBOL không có Repository/Namespace, nó sẽ nằm ở Global Namespace
-                global::EmployeeRepo.InsertEmployee(req.Name, req.Age);
-
-                return Ok(new { status = "Success", message = "Added via COBOL" });
+                // Gọi trực tiếp class từ COBOL đã được Otterkit biên dịch
+                global::EmployeeRepo.InsertEmployee(req.Name ?? "", req.Age);
+                
+                return Ok(new { status = "Success", message = "Data processed by COBOL engine" });
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return StatusCode(500, new { error = ex.Message });
             }
@@ -30,9 +28,9 @@ namespace MiniIngenium.Controllers
             try
             {
                 global::EmployeeRepo.FetchEmployees();
-                return Ok(new { status = "Executed", message = "Check server console for output" });
+                return Ok(new { status = "Executed", message = "Check server logs for COBOL DISPLAY output" });
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return StatusCode(500, new { error = ex.Message });
             }
@@ -41,7 +39,6 @@ namespace MiniIngenium.Controllers
 
     public class EmployeeRequest
     {
-        // Thêm ? để xử lý cảnh báo CS8618 (Nullable)
         public string? Name { get; set; }
         public int Age { get; set; }
     }

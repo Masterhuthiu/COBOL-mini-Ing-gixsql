@@ -29,6 +29,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-
+            type=ref,event=branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -37,7 +47,8 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -69,19 +80,20 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Install Otterkit (Fix Version Error)
+      - name: Install Otterkit
         run: |
+          # Cài đặt phiên bản mới nhất có sẵn (bao gồm cả bản beta/pre)
           dotnet tool install --global Otterkit --prerelease || dotnet tool install --global Otterkit
           echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
       - name: Restore packages
         run: dotnet restore src/MiniIngenium.csproj
 
+      # 2. BIÊN DỊCH FILE COBOL TRƯỚC KHI BUILD .NET
       - name: Compile COBOL
         run: |
-          # Biên dịch EmployeeRepo.cbl thành mã C# trung gian 
           otterkit build --type library --path cobol/EmployeeRepo.cbl
-          echo "COBOL Compiled"
+          echo "COBOL Library Generated"
 
       - name: Build
         run: |
@@ -92,7 +104,6 @@ jobs:
         env:
           PGPASSWORD: postgres
         run: |
-          # Load schema.sql để tạo bảng emp và policy [cite: 4]
           psql -h localhost -U postgres -d ingenium -f db/schema.sql
           echo "Schema loaded"
 
@@ -104,8 +115,9 @@ jobs:
           PGPASSWORD: postgres
           ASPNETCORE_URLS: http://+:5000
         run: |
-          dotnet run --project src/MiniIngenium.csproj --no-build -c Release &
-          
+          dotnet run --project src/MiniIngenium.csproj \
+            --no-build -c Release &
+
           echo "Waiting for API..."
           for i in $(seq 1 30); do
             if curl -sf http://localhost:5000/policy/query?id=1 > /dev/null 2>&1; then
@@ -115,27 +127,47 @@ jobs:
             sleep 1
           done
 
-      - name: Test Employee Endpoints (COBOL Bridge)
+      - name: Test all endpoints
         run: |
-          echo "=== ADDING EMPLOYEE VIA COBOL ==="
-          # Test gọi trực tiếp logic trong EmployeeRepo.cbl 
-          curl -sf -X POST http://localhost:5000/api/employee/add \
-            -H "Content-Type: application/json" \
-            -d '{"name": "Action Test User", "age": 30}' | python3 -m json.tool
+          echo "========================================"
+          echo "  POLICY QUERY"
+          echo "========================================"
+          curl -sf "http://localhost:5000/policy/query?id=1" | python3 -m json.tool
 
-          echo "=== LISTING EMPLOYEES ==="
-          curl -sf http://localhost:5000/api/employee/list | python3 -m json.tool
-
-      - name: Test Insurance Endpoints (Legacy Logic)
-        run: |
-          # Test logic Rating từ CobolLogic.cs thông qua CobolBridge.cs [cite: 2, 3]
+          echo "========================================"
+          echo "  RATING ENGINE (COBOL logic)"
+          echo "========================================"
           curl -sf -X POST http://localhost:5000/policy/rating \
             -H "Content-Type: application/json" \
             -d '{"policyId": 1}' | python3 -m json.tool
 
-      - name: Verify Final DB State
+          # 3. TEST ENDPOINT EMPLOYEE (GỌI COBOL THẬT)
+          echo "========================================"
+          echo "  ADD EMPLOYEE (Direct COBOL Call)"
+          echo "========================================"
+          curl -sf -X POST http://localhost:5000/api/employee/add \
+            -H "Content-Type: application/json" \
+            -d '{"name": "Nguyen Van COBOL", "age": 35}' | python3 -m json.tool
+
+          echo "========================================"
+          echo "  LIST EMPLOYEES"
+          echo "========================================"
+          curl -sf http://localhost:5000/api/employee/list | python3 -m json.tool
+
+          echo "========================================"
+          echo "  BILLING BATCH"
+          echo "========================================"
+          curl -sf -X POST http://localhost:5000/billing/run-batch \
+            -H "Content-Type: application/json" \
+            -d '{}' | python3 -m json.tool
+
+      - name: Verify DB final state
         env:
           PGPASSWORD: postgres
         run: |
-          echo "=== EMP TABLE ==="
-          psql -h localhost -U postgres -d ingenium -c "SELECT * FROM emp;"
+          echo "=== EMPLOYEE TABLE (Check COBOL Result) ==="
+          psql -h localhost -U postgres -d ingenium \
+            -c "SELECT * FROM emp;"
+          echo "=== POLICY TABLE ==="
+          psql -h localhost -U postgres -d ingenium \
+            -c "SELECT policy_id, customer, status FROM policy;"

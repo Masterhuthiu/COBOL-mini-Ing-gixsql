@@ -6,7 +6,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # Khởi động database PostgreSQL tạm thời
     services:
       postgres:
         image: postgres:15
@@ -26,21 +25,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET Sessions
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          # Cài cả 7.0 để chạy tool Otterkit và 8.0 để build app
+          dotnet-version: |
+            7.0.x
+            8.0.x
 
-      # Cài đặt công cụ biên dịch Otterkit
       - name: Install Otterkit Tool
         run: dotnet tool install --global Otterkit
 
-      # Khôi phục các thư viện (Npgsql, Otterkit.Runtime) khai báo trong .csproj
       - name: Restore dependencies
         run: dotnet restore
 
-      # Tạo bảng trong Postgres để code COBOL không bị lỗi khi chạy
-      - name: Initialize Database
+      - name: Initialize Database Schema
         run: |
           PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "
           CREATE TABLE IF NOT EXISTS emp (
@@ -49,8 +48,10 @@ jobs:
               age INT
           );"
 
-      # Biên dịch COBOL và chạy ứng dụng
       - name: Build and Run
+        env:
+          # Ép .NET chạy các tool cũ trên runtime mới nếu cần
+          DOTNET_ROLL_FORWARD: Major
         run: |
           otterkit build
           dotnet run --project MyCobolApp.csproj

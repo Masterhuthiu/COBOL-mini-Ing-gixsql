@@ -29,14 +29,14 @@ public class EmployeeController : ControllerBase
             if (string.IsNullOrEmpty(req.Name))
                 return BadRequest(new { error = "Tên không được để trống" });
 
-            // Cách 1: Gọi logic Insert qua COBOL (sử dụng Bridge)
-            // Phương thức này trong CobolBridge sẽ gọi sang EmployeeRepo.InsertEmployee
+            // GỌI SQL TRỰC TIẾP TRONG COBOL QUA BRIDGE
+            // Phương thức này sẽ kích hoạt EmployeeRepo.InsertEmployee trong file .cbl
             _cobol.AddEmployee(req.Name, req.Age);
 
             return Ok(new 
             { 
                 status = "Success", 
-                message = $"Đã thêm nhân viên {req.Name} qua COBOL engine." 
+                message = $"Đã thêm {req.Name} vào DB bằng SQL thực thi bên trong COBOL." 
             });
         }
         catch (Exception ex)
@@ -51,8 +51,7 @@ public class EmployeeController : ControllerBase
     {
         try
         {
-            // Cách 2: Truy vấn trực tiếp từ DB bằng C# (giống BillingController)
-            // để trả về JSON cho frontend/test dễ dàng hơn
+            // Lấy dữ liệu từ DB để trả về JSON (giống cách làm của BillingController)
             await using var conn = _db.GetConnection();
             await conn.OpenAsync();
 
@@ -72,7 +71,7 @@ public class EmployeeController : ControllerBase
                 });
             }
 
-            // Gọi thêm logic DISPLAY của COBOL để verify trong console log
+            // Gọi thêm lệnh DISPLAY của COBOL để kiểm tra Log Console
             _cobol.FetchEmployees();
 
             return Ok(employees);

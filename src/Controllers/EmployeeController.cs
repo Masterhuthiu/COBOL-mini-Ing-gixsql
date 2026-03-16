@@ -1,45 +1,93 @@
 using Microsoft.AspNetCore.Mvc;
+using Npgsql;
+using MiniIngenium.Services;
+using System;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
-namespace MiniIngenium.Controllers
+namespace MiniIngenium.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class EmployeeController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class EmployeeController : ControllerBase
-    {
-        [HttpPost("add")]
-        public IActionResult AddEmployee([FromBody] EmployeeRequest req)
-        {
-            try
-            {
-                // Gọi trực tiếp class từ COBOL đã được Otterkit biên dịch
-                global::EmployeeRepo.InsertEmployee(req.Name ?? "", req.Age);
-                
-                return Ok(new { status = "Success", message = "Data processed by COBOL engine" });
-            }
-            catch (System.Exception ex)
-            {
-                return StatusCode(500, new { error = ex.Message });
-            }
-        }
+    private readonly DbService _db;
 
-        [HttpGet("list")]
-        public IActionResult ListEmployees()
+    // Chỉ inject DbService, chưa cần CobolBridge ở bước này
+    public EmployeeController(DbService db)
+    {
+        _db = db;
+    }
+
+    // POST: api/employee/add
+    [HttpPost("add")]
+    public async Task<IActionResult> AddEmployee([FromBody] EmployeeRequest req)
+    {
+        try
         {
-            try
-            {
-                global::EmployeeRepo.FetchEmployees();
-                return Ok(new { status = "Executed", message = "Check server logs for COBOL DISPLAY output" });
-            }
-            catch (System.Exception ex)
-            {
-                return StatusCode(500, new { error = ex.Message });
-            }
+            if (string.IsNullOrEmpty(req.Name))
+                return BadRequest(new { error = "Tên không được để trống" });
+
+            await using var conn = _db.GetConnection();
+            await conn.OpenAsync();
+
+            // Thực hiện SQL Insert trực tiếp bằng C# để test DB
+            await using var cmd = new NpgsqlCommand(
+                "INSERT INTO emp (name, age) VALUES (@n, @a)", 
+                conn);
+            cmd.Parameters.AddWithValue("n", req.Name);
+            cmd.Parameters.AddWithValue("a", req.Age);
+            
+            await cmd.ExecuteNonQueryAsync();
+
+            return Ok(new 
+            { 
+                status = "Success", 
+                message = $"Đã thêm nhân viên {req.Name} trực tiếp qua C#." 
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
         }
     }
 
-    public class EmployeeRequest
+    // GET: api/employee/list
+    [HttpGet("list")]
+    public async Task<IActionResult> ListEmployees()
     {
-        public string? Name { get; set; }
-        public int Age { get; set; }
+        try
+        {
+            await using var conn = _db.GetConnection();
+            await conn.OpenAsync();
+
+            await using var cmd = new NpgsqlCommand(
+                "SELECT id, name, age FROM emp ORDER BY id DESC", 
+                conn);
+            await using var reader = await cmd.ExecuteReaderAsync();
+
+            var employees = new List<object>();
+            while (await reader.ReadAsync())
+            {
+                employees.Add(new
+                {
+                    id = reader.GetInt32(0),
+                    name = reader.GetString(1),
+                    age = reader.GetInt32(2)
+                });
+            }
+
+            return Ok(employees);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
+}
+
+public class EmployeeRequest
+{
+    public string? Name { get; set; }
+    public int Age { get; set; }
 }

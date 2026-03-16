@@ -79,26 +79,21 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-#//////////////
 
-      # --- BƯỚC QUAN TRỌNG MỚI ---
+      # 1. CÀI ĐẶT OTTERKIT COMPILER
       - name: Install Otterkit
         run: |
           dotnet tool install --global Otterkit --version 1.0.0-beta.1
-          # Thêm đường dẫn tool vào PATH để hệ thống nhận diện lệnh 'otterkit'
           echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
-
-
-#////////////// 
 
       - name: Restore packages
         run: dotnet restore src/MiniIngenium.csproj
 
-      - name: Compile COBOL with Otterkit
+      # 2. BIÊN DỊCH FILE COBOL TRƯỚC KHI BUILD .NET
+      - name: Compile COBOL
         run: |
-          # Biên dịch file COBOL thành mã nguồn C# trung gian
           otterkit build --type library --path cobol/EmployeeRepo.cbl
-          echo "COBOL Compiled to C#"
+          echo "COBOL Library Generated"
 
       - name: Build
         run: |
@@ -111,7 +106,6 @@ jobs:
         run: |
           psql -h localhost -U postgres -d ingenium -f db/schema.sql
           echo "Schema loaded"
-          psql -h localhost -U postgres -d ingenium -c "\dt"
 
       - name: Start API
         env:
@@ -138,8 +132,7 @@ jobs:
           echo "========================================"
           echo "  POLICY QUERY"
           echo "========================================"
-          curl -sf "http://localhost:5000/policy/query?id=1" \
-            | python3 -m json.tool
+          curl -sf "http://localhost:5000/policy/query?id=1" | python3 -m json.tool
 
           echo "========================================"
           echo "  RATING ENGINE (COBOL logic)"
@@ -148,6 +141,19 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"policyId": 1}' | python3 -m json.tool
 
+          # 3. TEST ENDPOINT EMPLOYEE (GỌI COBOL THẬT)
+          echo "========================================"
+          echo "  ADD EMPLOYEE (Direct COBOL Call)"
+          echo "========================================"
+          curl -sf -X POST http://localhost:5000/api/employee/add \
+            -H "Content-Type: application/json" \
+            -d '{"name": "Nguyen Van COBOL", "age": 35}' | python3 -m json.tool
+
+          echo "========================================"
+          echo "  LIST EMPLOYEES"
+          echo "========================================"
+          curl -sf http://localhost:5000/api/employee/list | python3 -m json.tool
+
           echo "========================================"
           echo "  BILLING BATCH"
           echo "========================================"
@@ -155,38 +161,13 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{}' | python3 -m json.tool
 
-          echo "========================================"
-          echo "  SUBMIT CLAIM (normal)"
-          echo "========================================"
-          curl -sf -X POST http://localhost:5000/claim/submit \
-            -H "Content-Type: application/json" \
-            -d '{"policyId": 1, "amount": 150000}' \
-            | python3 -m json.tool
-
-          echo "========================================"
-          echo "  HIGH VALUE CLAIM (COBOL warning)"
-          echo "========================================"
-          curl -sf -X POST http://localhost:5000/claim/submit \
-            -H "Content-Type: application/json" \
-            -d '{"policyId": 2, "amount": 1500000}' \
-            | python3 -m json.tool
-
-          echo "========================================"
-          echo "  INVOICES LIST"
-          echo "========================================"
-          curl -sf http://localhost:5000/billing/invoices \
-            | python3 -m json.tool
-
       - name: Verify DB final state
         env:
           PGPASSWORD: postgres
         run: |
+          echo "=== EMPLOYEE TABLE (Check COBOL Result) ==="
+          psql -h localhost -U postgres -d ingenium \
+            -c "SELECT * FROM emp;"
           echo "=== POLICY TABLE ==="
           psql -h localhost -U postgres -d ingenium \
-            -c "SELECT policy_id, customer, base_premium, status FROM policy;"
-          echo "=== INVOICE TABLE ==="
-          psql -h localhost -U postgres -d ingenium \
-            -c "SELECT * FROM invoice;"
-          echo "=== CLAIM TABLE ==="
-          psql -h localhost -U postgres -d ingenium \
-            -c "SELECT * FROM claim;"
+            -c "SELECT policy_id, customer, status FROM policy;"

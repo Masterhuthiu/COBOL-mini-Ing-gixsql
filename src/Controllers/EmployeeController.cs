@@ -1,33 +1,34 @@
 using Microsoft.AspNetCore.Mvc;
-using Npgsql;
-using MiniIngenium.Services;
-using System;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
 
-namespace MiniIngenium.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class EmployeeController : ControllerBase
+// namespace của bạn, ví dụ MiniIngenium.Controllers
+namespace MiniIngenium.Controllers
 {
-    [HttpPost("add")]
-    public IActionResult Add([FromBody] EmployeeRequest req)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class EmployeeController : ControllerBase
     {
-        // Gọi phương thức static trong EmployeeRepo.cob
-        EmployeeRepo.InsertEmployee(req.Name, req.Age);
-        return Ok(new { status = "Success", message = $"Added {req.Name}" });
+        [HttpPost("add")]
+        public IActionResult Add([FromBody] EmployeeRequest req)
+        {
+            // Gọi COBOL class đã build
+            EmployeeRepo.InsertEmployee(req.Name, req.Age);
+            return Ok(new { status = "Success", message = $"Added {req.Name}" });
+        }
+
+        [HttpGet("list")]
+        public IActionResult GetList()
+        {
+            // COBOL hiện đang DISPLAY ra console
+            EmployeeRepo.FetchEmployees();
+            return Ok(new { status = "Executed", message = "Check console log for output" });
+        }
     }
 
-    [HttpGet("list")]
-    public IActionResult GetList()
+    public class EmployeeRequest
     {
-        // Lưu ý: FetchEmployees trong COBOL của bạn hiện đang dùng DISPLAY
-        // Để API trả về JSON, bạn cần chỉnh sửa COBOL trả về List hoặc chuỗi.
-        // Tạm thời gọi để kiểm tra log Console:
-        EmployeeRepo.FetchEmployees();
-        return Ok(new { status = "Executed", message = "Check console log for output" });
+        public string Name { get; set; }
+        public int Age { get; set; }
     }
 }
-
-public class EmployeeRequest { public string Name { get; set; }; public int Age { get; set; }; }

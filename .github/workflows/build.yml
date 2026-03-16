@@ -47,42 +47,17 @@ jobs:
       - name: Verify Otterkit
         run: otterkit --version
 
-      - name: Create Otterkit project
+      - name: Create Otterkit project in temp dir
         run: |
+          mkdir -p cobolapp
+          cd cobolapp
           otterkit new application --name cobolapp
-          echo "=== Full structure after new ==="
-          find cobolapp -type f | sort
-          echo "=== Top level files ==="
-          ls -la cobolapp/
-
-      - name: Find and fix csproj
-        run: |
-          # Tìm .csproj ở bất kỳ đâu trong cobolapp
-          CSPROJ=$(find cobolapp -name "*.csproj" | head -1)
-          echo "Found csproj: $CSPROJ"
-
-          # Nếu không có csproj, tạo thủ công
-          if [ -z "$CSPROJ" ]; then
-            echo "No csproj found - creating manually"
-            cat > cobolapp/cobolapp.csproj << 'CSPROJ'
-          <Project Sdk="Microsoft.NET.Sdk">
-            <PropertyGroup>
-              <OutputType>Exe</OutputType>
-              <TargetFramework>net8.0</TargetFramework>
-              <Nullable>enable</Nullable>
-              <ImplicitUsings>enable</ImplicitUsings>
-            </PropertyGroup>
-          </Project>
-          CSPROJ
-            echo "Created cobolapp.csproj"
-          fi
-
-          echo "=== Final structure ==="
-          find cobolapp -type f | sort
+          echo "=== Structure after new (inside cobolapp/) ==="
+          find . -type f | sort
+          ls -la
 
       - name: Copy COBOL source into project
         run: |
-          mkdir -p cobolapp/src
           cp src/main.cbl         cobolapp/src/main.cbl
           cp src/EmployeeRepo.cbl cobolapp/src/EmployeeRepo.cbl
           echo "=== cobolapp/src/ ==="
@@ -92,9 +67,8 @@ jobs:
         working-directory: cobolapp
         run: |
           CSPROJ=$(find . -name "*.csproj" | head -1)
-          echo "Adding Npgsql to: $CSPROJ"
+          echo "Found: $CSPROJ"
           dotnet add "$CSPROJ" package Npgsql --version 8.0.3
-          echo "Npgsql added"
 
       - name: Setup database schema
         env:

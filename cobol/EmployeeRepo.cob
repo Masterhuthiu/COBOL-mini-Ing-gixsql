@@ -1,12 +1,16 @@
-       class-id. Program.
+       IDENTIFICATION DIVISION.
+       CLASS-ID. Program.
 
-       method-id. Main static.
-           declare emp type Employee.
-           set emp::Name to "Dang".
-           set emp::Age to 30.
+       METHOD-ID. Main STATIC.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+           DECLARE emp TYPE Employee.
+       PROCEDURE DIVISION.
+           SET emp::Name TO "Dang".
+           SET emp::Age TO 30.
 
-           invoke emp "PrintInfo".
-           goback.
-       end method Main.
+           INVOKE emp "PrintInfo".
+           GOBACK.
+       END METHOD Main.
 
-       end class Program.
+       END CLASS Program.

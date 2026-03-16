@@ -1,32 +1,12 @@
-IDENTIFICATION DIVISION.
-CLASS-ID. EmployeeRepo.
+       class-id. Program.
 
-ENVIRONMENT DIVISION.
-CONFIGURATION SECTION.
+       method-id. Main static.
+           declare emp type Employee.
+           set emp::Name to "Dang".
+           set emp::Age to 30.
 
-STATIC.
-    METHOD-ID. InsertEmployee.
-    DATA DIVISION.
-    LINKAGE SECTION.
-        01 empName AS ANY.
-        01 empAge BINARY-LONG.
-    PROCEDURE DIVISION USING BY VALUE empName, empAge.
+           invoke emp "PrintInfo".
+           goback.
+       end method Main.
 
-        DISPLAY "------------------------------------".
-        DISPLAY "COBOL: DA ADD nhan vien " empName.
-        DISPLAY "Tuoi: " empAge.
-        DISPLAY "------------------------------------".
-
-    END METHOD InsertEmployee.
-
-    METHOD-ID. FetchEmployees.
-    PROCEDURE DIVISION.
-
-        DISPLAY "------------------------------------".
-        DISPLAY "COBOL: DA LIST danh sach nhan vien".
-        DISPLAY "------------------------------------".
-
-    END METHOD FetchEmployees.
-END STATIC.
-
-END CLASS EmployeeRepo.
+       end class Program.

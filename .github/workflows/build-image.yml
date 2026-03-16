@@ -9,7 +9,6 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   REGISTRY: ghcr.io
-  # IMAGE_NAME gốc có thể chứa chữ hoa
   IMAGE_NAME: ${{ github.repository }}/mini-ingenium-dotnet
 
 jobs:
@@ -23,7 +22,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # BƯỚC QUAN TRỌNG: Chuyển tên Image về chữ thường để tránh lỗi Docker Registry
       - name: Lowercase Registry Image Name
         run: |
           echo "IMAGE_NAME_LOWER=${IMAGE_NAME,,}" >> $GITHUB_ENV
@@ -45,7 +43,6 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          # Sử dụng biến đã được lowercase ở đây
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -73,7 +70,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Cài đặt cả .NET 7 (cho Otterkit) và .NET 8 (cho App)
       - name: Setup .NET Runtimes
         uses: actions/setup-dotnet@v4
         with:
@@ -91,9 +87,10 @@ jobs:
 
       - name: Compile COBOL
         run: |
-          # Otterkit chạy trên .NET 7 sẽ không còn lỗi Exit Code 150
-          otterkit build --type library --path cobol/EmployeeRepo.cbl
-          echo "COBOL Library Generated"
+          # SỬA LỖI COB0950: Thêm tham số --entry để chỉ định file nguồn thay vì tìm main.cob
+          # Sử dụng --path để trỏ trực tiếp đến thư mục hoặc file cụ thể
+          otterkit build --type library --entry cobol/EmployeeRepo.cbl
+          echo "COBOL Library Generated Successfully"
 
       - name: Build
         run: |
@@ -126,19 +123,18 @@ jobs:
             sleep 1
           done
 
-      - name: Test Employee Endpoints (Verify COBOL)
+      - name: Test Employee Endpoints
         run: |
-          echo "=== TEST: ADD EMPLOYEE VIA COBOL ==="
+          echo "=== ADDING EMPLOYEE ==="
           curl -sf -X POST http://localhost:5000/api/employee/add \
             -H "Content-Type: application/json" \
-            -d '{"name": "GitHub Action Bot", "age": 25}' | python3 -m json.tool
+            -d '{"name": "COBOL Expert", "age": 45}' | python3 -m json.tool
 
-          echo "=== TEST: LIST EMPLOYEES ==="
+          echo "=== LISTING EMPLOYEES ==="
           curl -sf http://localhost:5000/api/employee/list | python3 -m json.tool
 
-      - name: Verify DB Final State
+      - name: Verify Final DB State
         env:
           PGPASSWORD: postgres
         run: |
-          echo "=== CHECKING DB TABLE: EMP ==="
           psql -h localhost -U postgres -d ingenium -c "SELECT * FROM emp;"

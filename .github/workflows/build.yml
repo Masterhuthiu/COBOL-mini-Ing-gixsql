@@ -40,34 +40,96 @@ jobs:
 
       - name: Install Otterkit
         run: |
-          dotnet tool install --global Otterkit
+          dotnet new install Otterkit.Templates::1.0.45-alpha
+          dotnet tool install --global Otterkit --version 1.0.50-alpha
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
-      - name: Create .NET project and add Npgsql
+      - name: Verify Otterkit
+        run: otterkit --version
+
+      - name: Create Otterkit project
         run: |
-          dotnet new console -o cobolapp
-          cd cobolapp
-          dotnet add package Npgsql --version 8.0.3
+          otterkit new application --name cobolapp
+          echo "=== Full structure after new ==="
+          find cobolapp -type f | sort
+          echo "=== Top level files ==="
+          ls -la cobolapp/
+
+      - name: Find and fix csproj
+        run: |
+          # Tìm .csproj ở bất kỳ đâu trong cobolapp
+          CSPROJ=$(find cobolapp -name "*.csproj" | head -1)
+          echo "Found csproj: $CSPROJ"
+
+          # Nếu không có csproj, tạo thủ công
+          if [ -z "$CSPROJ" ]; then
+            echo "No csproj found - creating manually"
+            cat > cobolapp/cobolapp.csproj << 'CSPROJ'
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <OutputType>Exe</OutputType>
+              <TargetFramework>net8.0</TargetFramework>
+              <Nullable>enable</Nullable>
+              <ImplicitUsings>enable</ImplicitUsings>
+            </PropertyGroup>
+          </Project>
+          CSPROJ
+            echo "Created cobolapp.csproj"
+          fi
+
+          echo "=== Final structure ==="
+          find cobolapp -type f | sort
+
+      - name: Copy COBOL source into project
+        run: |
+          mkdir -p cobolapp/src
+          cp src/main.cbl         cobolapp/src/main.cbl
+          cp src/EmployeeRepo.cbl cobolapp/src/EmployeeRepo.cbl
+          echo "=== cobolapp/src/ ==="
+          ls -la cobolapp/src/
+
+      - name: Add Npgsql to project
+        working-directory: cobolapp
+        run: |
+          CSPROJ=$(find . -name "*.csproj" | head -1)
+          echo "Adding Npgsql to: $CSPROJ"
+          dotnet add "$CSPROJ" package Npgsql --version 8.0.3
+          echo "Npgsql added"
 
       - name: Setup database schema
-        run: |
-          psql -h localhost -U postgres -d testdb -c "CREATE TABLE IF NOT EXISTS emp (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(100),
-            age INT
-          );"
         env:
           PGPASSWORD: postgres
-
-      - name: Compile COBOL program
         run: |
-          otterkit build src/main.cbl src/EmployeeRepo.cbl -o cobolapp/bin/Debug/net8.0/Program.dll
+          psql -h localhost -U postgres -d testdb -c "
+            CREATE TABLE IF NOT EXISTS emp (
+              id   SERIAL PRIMARY KEY,
+              name VARCHAR(100),
+              age  INT
+            );"
+          echo "Schema OK"
+          psql -h localhost -U postgres -d testdb -c "\dt"
+
+      - name: Build project
+        working-directory: cobolapp
+        run: |
+          dotnet build -c Debug
+          echo "=== Build output ==="
+          find bin -type f 2>/dev/null | sort || true
 
       - name: Run COBOL program
+        working-directory: cobolapp
         env:
           PGHOST: localhost
           PGPORT: 5432
           PGUSER: postgres
           PGPASSWORD: postgres
           PGDATABASE: testdb
+        run: dotnet run
+
+      - name: Verify DB
+        env:
+          PGPASSWORD: postgres
         run: |
-          dotnet cobolapp/bin/Debug/net8.0/Program.dll
+          echo "=== emp TABLE ==="
+          psql -h localhost -U postgres -d testdb \
+            -c "SELECT * FROM emp;"

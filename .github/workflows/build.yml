@@ -98,6 +98,7 @@ jobs:
         run: |
           dotnet run
 
+
       - name: Verify DB
         env:
           PGPASSWORD: postgres

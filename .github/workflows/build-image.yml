@@ -79,9 +79,26 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+#//////////////
+
+      # --- BƯỚC QUAN TRỌNG MỚI ---
+      - name: Install Otterkit
+        run: |
+          dotnet tool install --global Otterkit --version 1.0.0-beta.1
+          # Thêm đường dẫn tool vào PATH để hệ thống nhận diện lệnh 'otterkit'
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+
+#////////////// 
 
       - name: Restore packages
         run: dotnet restore src/MiniIngenium.csproj
+
+      - name: Compile COBOL with Otterkit
+        run: |
+          # Biên dịch file COBOL thành mã nguồn C# trung gian
+          otterkit build --type library --path cobol/EmployeeRepo.cbl
+          echo "COBOL Compiled to C#"
 
       - name: Build
         run: |

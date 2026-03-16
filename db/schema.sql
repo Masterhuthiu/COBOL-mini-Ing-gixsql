@@ -27,3 +27,9 @@ INSERT INTO policy (customer, product, base_premium, status) VALUES
     ('Tran Thi B',   'LIFE-PLUS',    800000.00, 'ACTIVE'),
     ('Le Van C',     'HEALTH-BASIC', 300000.00, 'INACTIVE')
 ON CONFLICT DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS emp (
+    id   SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    age  INTEGER NOT NULL
+);

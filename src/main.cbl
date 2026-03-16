@@ -1,16 +1,7 @@
-       IDENTIFICATION DIVISION.
-       PROGRAM-ID. MAIN.
-
-       PROCEDURE DIVISION.
-
-           DISPLAY "START MINI INGENIUM".
-
-           CALL "DB-CONNECT".
-
-           CALL "CREATE-POLICY".
-
-           CALL "ADD-RIDER".
-
-           DISPLAY "DONE".
-
-           STOP RUN.
+       class-id. Program.
+       method-id. Main static.
+           invoke type EmployeeRepo "InsertEmployee" using "Dang", 30.
+           invoke type EmployeeRepo "FetchEmployees".
+           goback.
+       end method Main.
+       end class Program.

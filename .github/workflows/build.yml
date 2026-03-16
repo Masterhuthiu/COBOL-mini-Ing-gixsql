@@ -107,11 +107,6 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Setup .NET 7
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '7.0.x'
-
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
@@ -119,29 +114,50 @@ jobs:
 
       - name: Install Otterkit
         run: |
-          dotnet tool install --global Otterkit
+          dotnet tool install --global Otterkit --version 1.0.80
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
-      - name: Create .NET project and add Npgsql
+      - name: Create Otterkit project
         run: |
-          dotnet new console -o cobolapp
-          cd cobolapp
-          dotnet add package Npgsql
+          otterkit new application --name cobolapp
+          echo "=== Project created ==="
+          find cobolapp -type f | sort
+
+      - name: Copy COBOL source into project
+        run: |
+          cp cobol/main.cbl         cobolapp/src/main.cbl
+          cp cobol/EmployeeRepo.cbl cobolapp/src/EmployeeRepo.cbl
+          echo "=== src/ contents ==="
+          ls -la cobolapp/src/
+
+      - name: Add Npgsql to project
+        working-directory: cobolapp
+        run: |
+          dotnet add package Npgsql --version 8.0.3
+          echo "Npgsql added"
 
       - name: Setup database schema
-        run: |
-          psql -h localhost -U postgres -d testdb -c "CREATE TABLE IF NOT EXISTS emp (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(100),
-            age INT
-          );"
         env:
           PGPASSWORD: postgres
-
-      - name: Compile COBOL program
         run: |
-          otterkit build src/main.cbl src/EmployeeRepo.cbl -o cobolapp/bin/Debug/net8.0/Program.dll
+          psql -h localhost -U postgres -d testdb -c "
+            CREATE TABLE IF NOT EXISTS emp (
+              id   SERIAL PRIMARY KEY,
+              name VARCHAR(100),
+              age  INT
+            );"
+          echo "Schema OK"
+          psql -h localhost -U postgres -d testdb -c "\dt"
+
+      - name: Build project
+        working-directory: cobolapp
+        run: |
+          dotnet build -c Debug
+          echo "=== Build output ==="
+          find bin -type f | sort
 
       - name: Run COBOL program
+        working-directory: cobolapp
         env:
           PGHOST: localhost
           PGPORT: 5432
@@ -149,4 +165,12 @@ jobs:
           PGPASSWORD: postgres
           PGDATABASE: testdb
         run: |
-          dotnet cobolapp/bin/Debug/net8.0/EmployeeRepo.dll
+          dotnet run
+          echo "=== Verify DB ==="
+
+      - name: Verify DB
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d testdb \
+            -c "SELECT * FROM emp;"

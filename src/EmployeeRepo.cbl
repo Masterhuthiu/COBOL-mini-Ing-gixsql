@@ -1,54 +1,49 @@
+identification division.
        class-id. EmployeeRepo.
 
        method-id. InsertEmployee static.
-           01 empName string.
-           01 empAge int.
+       procedure division using by value empName as string,
+                                        empAge  as binary-long.
+           declare conn as type Npgsql.NpgsqlConnection
+           declare cmd  as type Npgsql.NpgsqlCommand
 
-           *> Tạo kết nối PostgreSQL
-           invoke type Npgsql.NpgsqlConnection
-               "new" returning conn
-               with "Host=localhost;Username=postgres;Password=postgres;Database=testdb".
+           set conn = new Npgsql.NpgsqlConnection(
+               "Host=localhost;Username=postgres;Password=postgres;Database=testdb")
 
-           invoke conn "Open".
+           invoke conn "Open"
 
-           *> Tạo command INSERT
-           invoke type Npgsql.NpgsqlCommand
-               "new" returning cmd
-               with "INSERT INTO emp(name, age) VALUES(@n, @a)", conn.
+           set cmd = new Npgsql.NpgsqlCommand(
+               "INSERT INTO emp(name, age) VALUES(@n, @a)", conn)
 
-           invoke cmd "Parameters.AddWithValue" using "n", empName.
-           invoke cmd "Parameters.AddWithValue" using "a", empAge.
-
-           invoke cmd "ExecuteNonQuery".
-
-           invoke conn "Close".
+           invoke cmd::Parameters "AddWithValue" using "@n", empName
+           invoke cmd::Parameters "AddWithValue" using "@a", empAge
+           invoke cmd "ExecuteNonQuery"
+           invoke conn "Close"
            goback.
        end method InsertEmployee.
 
-
        method-id. FetchEmployees static.
-           01 reader object.
+       procedure division.
+           declare conn   as type Npgsql.NpgsqlConnection
+           declare cmd    as type Npgsql.NpgsqlCommand
+           declare reader as type Npgsql.NpgsqlDataReader
 
-           invoke type Npgsql.NpgsqlConnection
-               "new" returning conn
-               with "Host=localhost;Username=postgres;Password=postgres;Database=testdb".
+           set conn = new Npgsql.NpgsqlConnection(
+               "Host=localhost;Username=postgres;Password=postgres;Database=testdb")
 
-           invoke conn "Open".
+           invoke conn "Open"
 
-           *> Tạo command SELECT
-           invoke type Npgsql.NpgsqlCommand
-               "new" returning cmd
-               with "SELECT name, age FROM emp", conn.
+           set cmd = new Npgsql.NpgsqlCommand(
+               "SELECT name, age FROM emp", conn)
 
-           invoke cmd "ExecuteReader" returning reader.
+           invoke cmd "ExecuteReader" returning reader
 
-           *> Duyệt kết quả
-           perform until reader "Read" = false
-               display "Tên: " reader "GetString"(0)
-               display "Tuổi: " reader "GetInt32"(1)
-           end-perform.
+           perform until not reader::Read()
+               display "Ten: "  reader::GetString(0)
+               display "Tuoi: " reader::GetInt32(1)
+           end-perform
 
-           invoke conn "Close".
+           invoke conn "Close"
            goback.
        end method FetchEmployees.
 

@@ -60,15 +60,15 @@ jobs:
           CSPROJ=$(find cobolapp -name "*.csproj" | head -1)
           if [ -z "$CSPROJ" ]; then
             cat > cobolapp/cobolapp.csproj << 'CSPROJ'
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
-</Project>
-CSPROJ
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <OutputType>Exe</OutputType>
+                <TargetFramework>net8.0</TargetFramework>
+                <Nullable>enable</Nullable>
+                <ImplicitUsings>enable</ImplicitUsings>
+              </PropertyGroup>
+            </Project>
+            CSPROJ
           fi
           echo "=== Final structure ==="
           find cobolapp -type f | sort

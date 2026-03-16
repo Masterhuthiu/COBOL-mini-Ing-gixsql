@@ -28,13 +28,11 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      # Otterkit tool itself requires .NET 7 runtime
-      - name: Setup .NET 7 (required by Otterkit CLI)
+      - name: Setup .NET 7
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '7.0.x'
 
-      # Project targets .NET 8
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
@@ -57,9 +55,10 @@ jobs:
 
       - name: Copy COBOL source into project
         run: |
-          cp src/main.cbl          cobolapp/src/main.cbl
-          cp src/EmployeeRepo.cbl  cobolapp/src/EmployeeRepo.cbl
-          echo "=== src/ contents ==="
+          mkdir -p cobolapp/src
+          cp src/main.cbl         cobolapp/src/main.cbl
+          cp src/EmployeeRepo.cbl cobolapp/src/EmployeeRepo.cbl
+          echo "=== cobolapp/src/ ==="
           ls -la cobolapp/src/
 
       - name: Add Npgsql to project
@@ -79,6 +78,7 @@ jobs:
               age  INT
             );"
           echo "Schema OK"
+          psql -h localhost -U postgres -d testdb -c "\dt"
 
       - name: Build project
         working-directory: cobolapp
@@ -95,9 +95,7 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: postgres
           PGDATABASE: testdb
-        run: |
-          dotnet run
-
+        run: dotnet run
 
       - name: Verify DB
         env:

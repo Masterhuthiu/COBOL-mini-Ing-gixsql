@@ -1,24 +1,64 @@
-[ApiController]
-[Route("api/[controller]")]
-public class EmployeeController : ControllerBase
+using Microsoft.AspNetCore.Mvc;
+using System;
+
+namespace MiniIngenium.Controllers
 {
-    [HttpPost("add")]
-    public IActionResult Add([FromBody] EmployeeRequest req)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class EmployeeController : ControllerBase
     {
-        // Gọi phương thức static trong EmployeeRepo.cob
-        EmployeeRepo.InsertEmployee(req.Name, req.Age);
-        return Ok(new { status = "Success", message = $"Added {req.Name}" });
+        // POST: api/employee/add
+        [HttpPost("add")]
+        public IActionResult AddEmployee([FromBody] EmployeeRequest req)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(req.Name))
+                {
+                    return BadRequest(new { error = "Tên không được để trống" });
+                }
+
+                [cite_start]// Gọi phương thức static InsertEmployee từ EmployeeRepo.cob [cite: 3, 4]
+                EmployeeRepo.InsertEmployee(req.Name, req.Age);
+
+                return Ok(new 
+                { 
+                    status = "Success", 
+                    message = $"Đã thêm nhân viên {req.Name} vào database qua COBOL." 
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // GET: api/employee/list
+        [HttpGet("list")]
+        public IActionResult ListEmployees()
+        {
+            try
+            {
+                [cite_start]// Gọi phương thức FetchEmployees từ EmployeeRepo.cob [cite: 7, 8]
+                // Lưu ý: Kết quả sẽ DISPLAY ra console của server (GitHub Actions log)
+                EmployeeRepo.FetchEmployees();
+
+                return Ok(new 
+                { 
+                    status = "Executed", 
+                    message = "Danh sách nhân viên đã được in ra Console Log của Server." 
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
     }
 
-    [HttpGet("list")]
-    public IActionResult GetList()
+    public class EmployeeRequest
     {
-        // Lưu ý: FetchEmployees trong COBOL của bạn hiện đang dùng DISPLAY
-        // Để API trả về JSON, bạn cần chỉnh sửa COBOL trả về List hoặc chuỗi.
-        // Tạm thời gọi để kiểm tra log Console:
-        EmployeeRepo.FetchEmployees();
-        return Ok(new { status = "Executed", message = "Check console log for output" });
+        public string Name { get; set; }
+        public int Age { get; set; }
     }
 }
-
-public class EmployeeRequest { public string Name { get; set; }; public int Age { get; set; }; }

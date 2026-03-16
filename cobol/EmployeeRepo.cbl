@@ -4,7 +4,7 @@
            procedure division using by value name as string
                                       by value age as binary-long.
            declare conn type NpgsqlConnection
-               = new NpgsqlConnection("Host=localhost;Username=postgres;Password=postgres;Database=testdb").
+               = new NpgsqlConnection("Host=localhost;Username=postgres;Password=postgres;Database=ingenium").
            invoke conn "Open".
 
            declare cmd type NpgsqlCommand

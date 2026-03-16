@@ -160,6 +160,26 @@ jobs:
           curl -sf http://localhost:5000/billing/invoices \
             | python3 -m json.tool
 
+          echo "========================================"
+          echo "  ADD EMPLOYEE (COBOL via API)"
+          echo "========================================"
+          curl -sf -X POST http://localhost:5000/api/employee/add \
+            -H "Content-Type: application/json" \
+            -d '{"name": "Dang COBOL", "age": 30}' \
+            | python3 -m json.tool
+
+          echo "========================================"
+          echo "  LIST EMPLOYEES"
+          echo "========================================"
+          curl -sf http://localhost:5000/api/employee/list \
+            | python3 -m json.tool
+
+          echo "========================================"
+          echo "  DATABASE VERIFICATION (Postgres)"
+          echo "========================================"
+          # Kiểm tra trực tiếp trong DB để chắc chắn dữ liệu đã vào bảng emp
+          psql -h localhost -U postgres -d ingenium -c "SELECT * FROM emp;"
+
       - name: Verify DB final state
         env:
           PGPASSWORD: postgres
